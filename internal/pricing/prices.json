@@ -1,0 +1,82 @@
+{
+  "claude-haiku-4-5": {
+    "input": 1000,
+    "output": 5000,
+    "cache_read": 100,
+    "cache_write": 1250,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-03"
+  },
+  "claude-opus-5": {
+    "input": 5000,
+    "output": 25000,
+    "cache_read": 500,
+    "cache_write": 6250,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-03"
+  },
+  "claude-opus-5-5": {
+    "input": 4000,
+    "output": 20000,
+    "cache_read": 200,
+    "cache_write": 5000,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-03"
+  },
+  "claude-sonnet-5": {
+    "input": 2000,
+    "output": 10000,
+    "cache_read": 200,
+    "cache_write": 2500,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-03"
+  },
+  "claude-sonnet-5-5": {
+    "input": 2000,
+    "output": 10000,
+    "cache_read": 200,
+    "cache_write": 2500,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-03"
+  },
+  "gemini-2.5-flash": {
+    "input": 300,
+    "output": 2500,
+    "cache_read": 30,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-03"
+  },
+  "gemini-2.5-pro": {
+    "input": 2500,
+    "output": 15000,
+    "cache_read": 250,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-03"
+  },
+  "gemini-3.1-pro-preview": {
+    "input": 4000,
+    "output": 18000,
+    "cache_read": 400,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-03"
+  },
+  "gemini-3.5-flash": {
+    "input": 1500,
+    "output": 9000,
+    "cache_read": 150,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-03"
+  },
+  "gemini-3.8-flash": {
+    "input": 750,
+    "output": 3750,
+    "cache_read": 75,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-03"
+  }
+}
