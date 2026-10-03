@@ -66,8 +66,8 @@ github.com/golang/protobuf v1.5.4 h1:i7eJL8qZTpSEXOPTxNKhASYpMn+8e5Q6AdndVa1dWek
 github.com/golang/protobuf v1.5.4/go.mod h1:lnTiLA8Wa4RWRcIUkrtSVa5nRhsEGBg48fD6rSs7xps=
 github.com/gollem-dev/agentkit v0.4.0 h1:dS5R7UY8XyshDSucfrWb+8oASIkz3F8hczcGMsmGXuQ=
 github.com/gollem-dev/agentkit v0.4.0/go.mod h1:tcQIif4TQ8NQE8u9fHcvsTN45kKd8JcInhDB3KAiS3k=
-github.com/gollem-dev/gollem v0.29.0 h1:z4I3swOGrwBXc5e6tc5FIns/VMae6awqDEgu4C/evOE=
-github.com/gollem-dev/gollem v0.29.0/go.mod h1:5j4HasoXtmW7iXaxWtQemkxpPXChKz1uD/1154Y7q04=
+github.com/gollem-dev/gollem v0.30.0 h1:eQmI/AOoBsfHHYz0sZwepmve4h7uso6gcO1aR00KE+g=
+github.com/gollem-dev/gollem v0.30.0/go.mod h1:5j4HasoXtmW7iXaxWtQemkxpPXChKz1uD/1154Y7q04=
 github.com/google/flatbuffers v23.5.26+incompatible h1:M9dgRyhJemaM4Sw8+66GHBu8ioaQmyPLg1b8VwK5WJg=
 github.com/google/flatbuffers v23.5.26+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
