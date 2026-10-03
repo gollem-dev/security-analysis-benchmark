@@ -32,7 +32,7 @@ const (
 )
 
 func TestTheBundledConfigurationLoads(t *testing.T) {
-	l, err := config.Load(filepath.Join("..", "..", "bench.toml"), config.Env{GoogleCloudProject: "p"}, prices(t))
+	l, err := config.Load(filepath.Join("..", "..", "examples", "bench.toml"), config.Env{GoogleCloudProject: "p"}, prices(t))
 	gt.NoError(t, err).Required()
 	gt.A(t, l.Candidates).Length(3)
 	gt.V(t, l.Plan).Equal(bench.DefaultPlan)

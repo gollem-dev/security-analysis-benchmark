@@ -367,7 +367,7 @@ func TestARunWithoutGitIsNamedUnknown(t *testing.T) {
 func TestTheBundledConfigurationFitsItsLimit(t *testing.T) {
 	prices, err := pricing.Embedded()
 	gt.NoError(t, err).Required()
-	l, err := config.Load(filepath.Join("..", "..", "bench.toml"), config.Env{GoogleCloudProject: "p"}, prices)
+	l, err := config.Load(filepath.Join("..", "..", "examples", "bench.toml"), config.Env{GoogleCloudProject: "p"}, prices)
 	gt.NoError(t, err).Required()
 	all, err := scenario.All()
 	gt.NoError(t, err).Required()
