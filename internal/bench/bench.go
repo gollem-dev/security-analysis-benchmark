@@ -37,17 +37,6 @@ var Roles = []Role{RoleOrchestrator, RoleWorker}
 // Valid reports whether r is a declared role.
 func (r Role) Valid() bool { return r == RoleOrchestrator || r == RoleWorker }
 
-// Label is the role's heading in the report.
-func (r Role) Label() string {
-	switch r {
-	case RoleOrchestrator:
-		return "orchestrator (investigation)"
-	case RoleWorker:
-		return "worker (SQL and API exploration)"
-	}
-	return string(r)
-}
-
 // Kind is a scenario's kind. It decides the scenario's tools and system prompt and the heading it is
 // shown under; scores are never aggregated by it.
 type Kind string

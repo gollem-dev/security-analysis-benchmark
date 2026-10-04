@@ -282,8 +282,8 @@ func TestEveryEnvFlagReadsItsVariable(t *testing.T) {
 func TestListShowsTheRolesAndScenarios(t *testing.T) {
 	o := run(t, &fakeClient{}, "list")
 	gt.N(t, o.code).Equal(0)
-	gt.S(t, o.stdout).Contains("orchestrator (investigation)")
-	gt.S(t, o.stdout).Contains("worker (SQL and API exploration)")
+	gt.S(t, o.stdout).HasPrefix("orchestrator\n")
+	gt.S(t, o.stdout).Contains("\nworker\n")
 	gt.S(t, o.stdout).Contains("ID  ")
 	all, err := scenario.All()
 	gt.NoError(t, err).Required()

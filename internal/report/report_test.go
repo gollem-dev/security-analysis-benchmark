@@ -52,7 +52,7 @@ func TestThePageShowsEveryState(t *testing.T) {
 		"Run 20261003T000000Z-0123456 · commit 0123456 · started 2026-10-03 00:00 UTC · spent $7.86 of $30.00",
 		"An LLM call cost $0.0400, more than the $0.0350 reserved for it before the call.",
 		"<h2>Runs</h2>", "r2", "Provider defaults", "v0.29.0",
-		"Quality and efficiency", "worker (SQL and API exploration)",
+		"Quality and efficiency", "<h3>worker</h3>",
 		"Scenarios compared: 2 of the role's 3",
 		"Efficiency (cheaper to the right)", "Low cost, high quality",
 		"Grounded (pass^1)", "All 3 grounded (pass^3)", "Reach / conduct", "Mean cost per trial", "Mean time per trial",

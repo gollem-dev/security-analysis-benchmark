@@ -170,7 +170,7 @@ func build(r *bench.Result) pageData {
 		d.Charts = append(d.Charts, chart(r, view, color))
 	}
 	for _, rr := range r.Roles {
-		section := roleSection{Label: rr.Role.Label()}
+		section := roleSection{Label: string(rr.Role)}
 		for _, kind := range bench.Kinds {
 			ks := kindSection{Label: kind.Label()}
 			for _, s := range rr.Scenarios {
@@ -203,7 +203,7 @@ func isBaseline(r *bench.Result, name string, role bench.Role) bool {
 }
 
 func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
-	cv := chartView{Label: view.Role.Label(), Width: chartWidth, Height: chartHeight,
+	cv := chartView{Label: string(view.Role), Width: chartWidth, Height: chartHeight,
 		Left: coord(plotLeft), Right: coord(plotRight), Top: coord(plotTop), Bottom: coord(plotBottom),
 		MidX: coord((plotLeft + plotRight) / 2), MidY: coord((plotTop + plotBottom) / 2), XTitleY: coord(plotBottom + 48),
 		ZoneX: coord(chartX(50)), ZoneY: coord(plotTop), ZoneW: coord(chartX(100) - chartX(50)), ZoneH: coord(chartY(50) - chartY(100)),

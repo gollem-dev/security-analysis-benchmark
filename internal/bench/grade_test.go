@@ -85,9 +85,7 @@ func TestRequestHashIsStable(t *testing.T) {
 	gt.N(t, len(a)).Equal(64)
 }
 
-func TestRoleAndKindLabels(t *testing.T) {
-	gt.S(t, bench.RoleOrchestrator.Label()).Equal("orchestrator (investigation)")
-	gt.S(t, bench.RoleWorker.Label()).Equal("worker (SQL and API exploration)")
+func TestKindLabelsAndRoles(t *testing.T) {
 	gt.S(t, bench.KindInvestigate.Label()).Equal("Investigation")
 	gt.S(t, bench.KindSQL.Label()).Equal("SQL exploration")
 	gt.S(t, bench.KindAPI.Label()).Equal("API exploration")
