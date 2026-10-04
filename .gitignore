@@ -32,7 +32,8 @@ go.work.sum
 # .idea/
 # .vscode/
 
-# Benchmark output, local research notes and working documents
+# Benchmark output, each operator's own configuration, local research notes and working documents
 .eval/
+workspace/
 tmp/
 .spec/

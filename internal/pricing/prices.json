@@ -48,20 +48,20 @@
     "checked": "2026-10-03"
   },
   "gemini-2.5-pro": {
-    "input": 2500,
-    "output": 15000,
-    "cache_read": 250,
+    "input": 1250,
+    "output": 10000,
+    "cache_read": 125,
     "cache_write": 0,
     "source": "https://ai.google.dev/gemini-api/docs/pricing",
-    "checked": "2026-10-03"
+    "checked": "2026-10-04"
   },
   "gemini-3.1-pro-preview": {
-    "input": 4000,
-    "output": 18000,
-    "cache_read": 400,
+    "input": 2000,
+    "output": 12000,
+    "cache_read": 200,
     "cache_write": 0,
     "source": "https://ai.google.dev/gemini-api/docs/pricing",
-    "checked": "2026-10-03"
+    "checked": "2026-10-04"
   },
   "gemini-3.5-flash": {
     "input": 1500,
@@ -78,5 +78,21 @@
     "cache_write": 0,
     "source": "https://ai.google.dev/gemini-api/docs/pricing",
     "checked": "2026-10-03"
+  },
+  "gpt-6-luna": {
+    "input": 100,
+    "output": 500,
+    "cache_read": 10,
+    "cache_write": 125,
+    "source": "https://developers.openai.com/api/docs/pricing",
+    "checked": "2026-10-04"
+  },
+  "gpt-6.1-sol": {
+    "input": 2000,
+    "output": 10000,
+    "cache_read": 100,
+    "cache_write": 2500,
+    "source": "https://developers.openai.com/api/docs/pricing",
+    "checked": "2026-10-04"
   }
 }
