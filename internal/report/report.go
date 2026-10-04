@@ -46,11 +46,7 @@ type pageData struct {
 	Violation                          string
 	Runs                               []runRow
 	Charts                             []chartView
-	TrialCap                           string
-	HalvingGain                        int
-	OrchestratorScenarios              int
-	WorkerScenarios                    int
-	Candidates                         []candidateRow
+	Candidates                        []candidateRow
 	Roles                              []roleSection
 	NotRun                             int
 	Excluded                           []string
@@ -134,8 +130,7 @@ func maxText(raw string) string {
 
 func build(r *bench.Result) pageData {
 	d := pageData{RunID: r.RunID, Commit: shortCommit(r.Commit), Started: r.StartedAt.UTC().Format("2006-01-02 15:04 UTC"),
-		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD), TrialCap: r.Plan.TrialCapUSD.USD(),
-		HalvingGain: HalvingGain(r.Plan.TrialCapUSD)}
+		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD)}
 	if v := r.BudgetViolation; v != nil {
 		d.Violation = fmt.Sprintf("An LLM call cost %s, more than the %s reserved for it before the call. The run stopped there, "+
 			"because the spending limit could no longer be guaranteed.",
@@ -161,12 +156,6 @@ func build(r *bench.Result) pageData {
 			Spent: pricing.NanoUSD(c.CostNanoUSD).USD4(), Baseline: strings.Join(baseline, ", ")})
 	}
 	for _, view := range Roles(r) {
-		switch view.Role {
-		case bench.RoleOrchestrator:
-			d.OrchestratorScenarios = view.Total
-		case bench.RoleWorker:
-			d.WorkerScenarios = view.Total
-		}
 		d.Charts = append(d.Charts, chart(r, view, color))
 	}
 	for _, rr := range r.Roles {
@@ -255,7 +244,7 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 				continue
 			}
 			if ds := sc.ByDifficulty[dd-1]; ds.Measured {
-				lines = append(lines, fmt.Sprintf("Difficulty %d: quality %s, efficiency %s", dd, whole(ds.Quality), whole(ds.Efficiency)))
+				lines = append(lines, fmt.Sprintf("Difficulty %d: quality %s, cost efficiency %s", dd, whole(ds.Quality), whole(ds.Efficiency)))
 			} else {
 				lines = append(lines, fmt.Sprintf("Difficulty %d: not measured", dd))
 			}

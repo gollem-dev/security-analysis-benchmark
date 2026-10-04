@@ -76,11 +76,6 @@ func efficiencyOf(mean, cap float64) float64 {
 	return max(0, min(100, 100*math.Log(cap/mean)/math.Log(cap/low)))
 }
 
-// HalvingGain is how many points of efficiency halving a trial's cost gains under cap, rounded.
-func HalvingGain(cap pricing.NanoUSD) int {
-	return int(math.Round(Efficiency(int64(cheapest), cap) - Efficiency(int64(2*cheapest), cap)))
-}
-
 // The confidence intervals' resampling.
 const (
 	BootstrapResamples        = 10000

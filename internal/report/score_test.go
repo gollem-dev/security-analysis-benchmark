@@ -38,7 +38,6 @@ func TestEfficiency(t *testing.T) {
 	near(t, report.Efficiency(10_000_000, cap), 100)
 	near(t, report.Efficiency(int64(cap), cap), 0)
 	near(t, report.Efficiency(20_000_000, cap), 100*math.Log(2e9/2e7)/math.Log(2e9/1e7))
-	gt.N(t, report.HalvingGain(cap)).Equal(13)
 }
 
 func TestPassHatK(t *testing.T) {
