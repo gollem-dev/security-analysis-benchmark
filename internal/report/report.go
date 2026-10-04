@@ -46,7 +46,8 @@ type pageData struct {
 	Violation                          string
 	Runs                               []runRow
 	Charts                             []chartView
-	Candidates                        []candidateRow
+	TrialCap                           string
+	Candidates                       []candidateRow
 	Roles                              []roleSection
 	NotRun                             int
 	Excluded                           []string
@@ -130,7 +131,8 @@ func maxText(raw string) string {
 
 func build(r *bench.Result) pageData {
 	d := pageData{RunID: r.RunID, Commit: shortCommit(r.Commit), Started: r.StartedAt.UTC().Format("2006-01-02 15:04 UTC"),
-		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD)}
+		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD),
+		TrialCap: r.Plan.TrialCapUSD.USD()}
 	if v := r.BudgetViolation; v != nil {
 		d.Violation = fmt.Sprintf("An LLM call cost %s, more than the %s reserved for it before the call. The run stopped there, "+
 			"because the spending limit could no longer be guaranteed.",
