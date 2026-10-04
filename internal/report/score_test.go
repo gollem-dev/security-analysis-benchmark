@@ -124,6 +124,22 @@ func TestScoresRestOnTheScenariosEveryCandidateWasMeasuredOn(t *testing.T) {
 	near(t, a.MeanSeconds, 10)
 }
 
+// Candidates measured under different trial caps are each scored against their own cap.
+func TestEfficiencyIsScoredAgainstEachCandidatesOwnCap(t *testing.T) {
+	r := resultOf([]string{"a", "b"},
+		scenarioOf("s1", 1, append(trials("a", []bool{true, true}, 4e8), trials("b", []bool{true, true}, 4e8)...)...))
+	low, high := bench.DefaultPlan, bench.DefaultPlan
+	low.TrialCapUSD, high.TrialCapUSD = 500_000_000, 2_000_000_000
+	r.Candidates[0].RunID, r.Candidates[1].RunID = "ra", "rb"
+	r.Runs = []bench.RunManifest{{RunID: "ra", Plan: &low}, {RunID: "rb", Plan: &high}}
+	view := report.Roles(r)[0]
+	near(t, view.Scores[0].Efficiency, report.Efficiency(4e8, low.TrialCapUSD))
+	near(t, view.Scores[1].Efficiency, report.Efficiency(4e8, high.TrialCapUSD))
+	gt.B(t, view.Scores[0].Efficiency < view.Scores[1].Efficiency).True()
+	gt.B(t, view.Scores[0].EfficiencyCI.Contains(view.Scores[0].Efficiency)).True()
+	gt.B(t, view.Scores[1].EfficiencyCI.Contains(view.Scores[1].Efficiency)).True()
+}
+
 func TestIntervalsAreFixedAndHoldThePointEstimate(t *testing.T) {
 	r := resultOf([]string{"a", "b"},
 		scenarioOf("s1", 1, append(trials("a", []bool{true, false, true}, 2e7), trials("b", []bool{true, true, true}, 5e7)...)...),

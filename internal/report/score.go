@@ -254,9 +254,10 @@ func scoreRole(r *bench.Result, role bench.Role, scenarios []bench.ScenarioResul
 	}
 	view.Compared = len(compared)
 	weight := func(j int) float64 { return float64(scenarios[j].Difficulty) }
-	capUSD := float64(r.Plan.TrialCapUSD)
+	caps := make([]pricing.NanoUSD, len(candidates))
 
 	for i, c := range candidates {
+		caps[i] = r.PlanOf(c).TrialCapUSD
 		sc := RoleScore{Candidate: c}
 		for j := range scenarios {
 			if samples[i][j].n() == 0 {
@@ -278,7 +279,7 @@ func scoreRole(r *bench.Result, role bench.Role, scenarios []bench.ScenarioResul
 		for _, j := range compared {
 			s := samples[i][j]
 			wj := weight(j)
-			eff := Efficiency(s.meanCost, r.Plan.TrialCapUSD)
+			eff := Efficiency(s.meanCost, caps[i])
 			w += wj
 			q += wj * average(s.quality)
 			e += wj * eff
@@ -328,7 +329,7 @@ func scoreRole(r *bench.Result, role bench.Role, scenarios []bench.ScenarioResul
 		return view
 	}
 	view.Best = view.Scores[best].Candidate
-	bootstrap(&view, samples, measured, compared, weight, capUSD, best)
+	bootstrap(&view, samples, measured, compared, weight, caps, best)
 	return view
 }
 
@@ -343,7 +344,7 @@ func fnv64a(s string) uint64 {
 // within each drawn scenario; every candidate draws its trials from a sequence of its own, so adding
 // a candidate does not change another's draws. The seed is fixed, so a result is always reported
 // with the same intervals.
-func bootstrap(view *RoleView, samples [][]sample, measured, compared []int, weight func(int) float64, capUSD float64, best int) {
+func bootstrap(view *RoleView, samples [][]sample, measured, compared []int, weight func(int) float64, caps []pricing.NanoUSD, best int) {
 	scenarioRNG := rand.New(rand.NewPCG(BootstrapSeed, 0))
 	trialRNG := map[int]*rand.Rand{}
 	for _, i := range measured {
@@ -376,7 +377,7 @@ func bootstrap(view *RoleView, samples [][]sample, measured, compared []int, wei
 				w += wj
 				qs += wj * sq / float64(n)
 				gs += wj * sg / float64(n)
-				es += wj * efficiencyOf(sc/float64(n), capUSD)
+				es += wj * efficiencyOf(sc/float64(n), float64(caps[i]))
 			}
 			q[i] = qs / w
 			quality[i] = append(quality[i], qs/w)

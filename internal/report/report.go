@@ -46,8 +46,7 @@ type pageData struct {
 	Violation                          string
 	Runs                               []runRow
 	Charts                             []chartView
-	TrialCap                           string
-	Candidates                       []candidateRow
+	Candidates                         []candidateRow
 	Roles                              []roleSection
 	NotRun                             int
 	Excluded                           []string
@@ -55,7 +54,7 @@ type pageData struct {
 
 type runRow struct{ Run, Commit, Started, Go, Gollem, Agentkit, BigQuery, Sampling string }
 
-type candidateRow struct{ Name, Color, Provider, Model, Spent, Baseline string }
+type candidateRow struct{ Name, Color, Provider, Model, TrialCap, Spent, Baseline string }
 
 type tick struct{ At, Label string }
 
@@ -131,8 +130,7 @@ func maxText(raw string) string {
 
 func build(r *bench.Result) pageData {
 	d := pageData{RunID: r.RunID, Commit: shortCommit(r.Commit), Started: r.StartedAt.UTC().Format("2006-01-02 15:04 UTC"),
-		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD),
-		TrialCap: r.Plan.TrialCapUSD.USD()}
+		Spent: pricing.NanoUSD(r.SpentNanoUSD).USD(), Max: maxText(r.MaxUSD)}
 	if v := r.BudgetViolation; v != nil {
 		d.Violation = fmt.Sprintf("An LLM call cost %s, more than the %s reserved for it before the call. The run stopped there, "+
 			"because the spending limit could no longer be guaranteed.",
@@ -155,7 +153,7 @@ func build(r *bench.Result) pageData {
 			baseline = append(baseline, string(role))
 		}
 		d.Candidates = append(d.Candidates, candidateRow{Name: c.Name, Color: color[c.Name], Provider: c.Provider, Model: c.Model,
-			Spent: pricing.NanoUSD(c.CostNanoUSD).USD4(), Baseline: strings.Join(baseline, ", ")})
+			TrialCap: r.PlanOf(c.Name).TrialCapUSD.USD(), Spent: pricing.NanoUSD(c.CostNanoUSD).USD4(), Baseline: strings.Join(baseline, ", ")})
 	}
 	for _, view := range Roles(r) {
 		d.Charts = append(d.Charts, chart(r, view, color))
@@ -306,7 +304,7 @@ func scenarioSection(r *bench.Result, s bench.ScenarioResult, color map[string]s
 		}
 		if cost, ok := t.MeanCost(); ok {
 			row.Quality = whole(average(smp.quality))
-			row.Efficiency = whole(Efficiency(cost, r.Plan.TrialCapUSD))
+			row.Efficiency = whole(Efficiency(cost, r.PlanOf(c.Name).TrialCapUSD))
 			row.MeanCost = pricing.NanoUSD(cost).USD4()
 			row.MeanTime = fmt.Sprintf("%.1f s", average(smp.seconds))
 			row.Calls = fmt.Sprintf("%.1f", t.MeanCalls())

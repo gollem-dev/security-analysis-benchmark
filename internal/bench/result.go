@@ -114,6 +114,9 @@ type RunManifest struct {
 	Modules       map[string]string `json:"modules"`
 	EmulatorImage string            `json:"emulator_image"`
 	Sampling      string            `json:"sampling"`
+	// Plan is the plan the run's candidates were measured under; nil in a result written before runs
+	// recorded it, whose candidates were measured under the result's own Plan.
+	Plan *Plan `json:"plan,omitempty"`
 }
 
 // NewRunManifest records the run's conditions, with the versions of TrackedModules read from the
@@ -169,6 +172,24 @@ type Result struct {
 	Excluded   []ExcludedScenario `json:"excluded,omitempty"`
 	// Traces are the trials' execution traces, written beside the result; never part of it.
 	Traces []TraceFile `json:"-"`
+}
+
+// PlanOf is the plan the candidate was measured under: its run's, so that a merge of runs with
+// different plans scores every candidate by its own. A candidate of no recorded run, or of a run that
+// did not record its plan, was measured under the result's Plan.
+func (r *Result) PlanOf(candidate string) Plan {
+	runID := r.RunID
+	for _, c := range r.Candidates {
+		if c.Name == candidate && c.RunID != "" {
+			runID = c.RunID
+		}
+	}
+	for _, m := range r.Runs {
+		if m.RunID == runID && m.Plan != nil {
+			return *m.Plan
+		}
+	}
+	return r.Plan
 }
 
 // ReadResult reads one result file and refuses a format version this build does not know.

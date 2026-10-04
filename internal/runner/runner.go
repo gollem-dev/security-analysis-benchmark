@@ -271,7 +271,9 @@ func Run(ctx context.Context, cfg Config, scenarios []bench.Scenario) (*bench.Re
 	r.mu.Lock()
 	out.BudgetViolation = r.violation
 	r.mu.Unlock()
-	out.Runs = []bench.RunManifest{bench.NewRunManifest(runID, cfg.Commit, cfg.Branch, started, cfg.EmulatorImage)}
+	manifest := bench.NewRunManifest(runID, cfg.Commit, cfg.Branch, started, cfg.EmulatorImage)
+	manifest.Plan = &out.Plan
+	out.Runs = []bench.RunManifest{manifest}
 	out.FinishedAt = cfg.Now().UTC()
 	return out, nil
 }

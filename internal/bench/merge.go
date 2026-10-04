@@ -14,7 +14,8 @@ type Source struct {
 	Dir    string
 }
 
-// Merge puts several results into one written to outDir. A scenario is merged only when every
+// Merge puts several results into one written to outDir. The merged Plan is the first result's; every
+// run keeps its own, which its candidates are scored by. A scenario is merged only when every
 // result that has it measured the same version of the same content; otherwise it is left out with
 // the reason, so every candidate's scores rest on the same scenarios. A candidate named in more than
 // one result is renamed <name>@<run_id>. Trace paths are rewritten to be relative to outDir, the
@@ -104,7 +105,14 @@ func Merge(sources []Source, outDir string) (*Result, error) {
 		if r.BudgetViolation != nil && out.BudgetViolation == nil {
 			out.BudgetViolation = r.BudgetViolation
 		}
-		out.Runs = append(out.Runs, r.Runs...)
+		for _, m := range r.Runs {
+			// A run that did not record its plan was measured under its result's.
+			if m.Plan == nil {
+				plan := r.Plan
+				m.Plan = &plan
+			}
+			out.Runs = append(out.Runs, m)
+		}
 		// A merged result read back keeps the scenarios its own merge left out.
 		out.Excluded = append(out.Excluded, r.Excluded...)
 	}

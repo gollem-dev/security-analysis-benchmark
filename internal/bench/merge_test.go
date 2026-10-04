@@ -60,6 +60,38 @@ func TestMergingKeepsTheSameScenariosAndLeavesOutTheChangedOnes(t *testing.T) {
 	gt.A(t, merged.Runs).Length(2)
 }
 
+// Runs with different trial caps merged: each candidate keeps the plan it was measured under, whether
+// its run recorded the plan or only its result did.
+func TestMergingKeepsEveryRunsPlan(t *testing.T) {
+	low, high := bench.DefaultPlan, bench.DefaultPlan
+	low.TrialCapUSD, high.TrialCapUSD = 500_000_000, 2_000_000_000
+	a := runResult("a", 1, false)
+	a.Plan = low
+	a.Runs[0].Plan = &low
+	b := runResult("b", 1, false)
+	b.Plan = high // an older result: its run did not record the plan
+	dir := t.TempDir()
+	merged, err := bench.Merge([]bench.Source{{Result: a, Dir: dir}, {Result: b, Dir: dir}}, dir)
+	gt.NoError(t, err).Required()
+	gt.V(t, merged.PlanOf("flash@a")).Equal(low)
+	gt.V(t, merged.PlanOf("flash@b")).Equal(high)
+
+	// A merge of merged results still finds every run's plan.
+	again, err := bench.Merge([]bench.Source{{Result: merged, Dir: dir}}, dir)
+	gt.NoError(t, err).Required()
+	gt.V(t, again.PlanOf("flash@b")).Equal(high)
+}
+
+func TestACandidateOfASingleRunIsMeasuredUnderItsPlan(t *testing.T) {
+	r := runResult("a", 1, false)
+	r.Plan = bench.DefaultPlan
+	gt.V(t, r.PlanOf("flash")).Equal(bench.DefaultPlan)
+	own := bench.DefaultPlan
+	own.TrialCapUSD = 300_000_000
+	r.Runs[0].Plan = &own
+	gt.V(t, r.PlanOf("flash")).Equal(own)
+}
+
 func TestMergingOneResultKeepsItsNames(t *testing.T) {
 	dir := t.TempDir()
 	merged, err := bench.Merge([]bench.Source{{Result: runResult("a", 1, false), Dir: dir}}, dir)

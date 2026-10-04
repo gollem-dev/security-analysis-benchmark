@@ -53,7 +53,7 @@ func TestThePageShowsEveryState(t *testing.T) {
 		"An LLM call cost $0.0400, more than the $0.0350 reserved for it before the call.",
 		"<h2>Runs</h2>", "r2", "Provider defaults", "v0.29.0",
 		"Quality and cost efficiency", "<h3>worker</h3>",
-		"is whether a trial reached the correct conclusion", "0 at the trial cap of $2.00",
+		"is whether a trial reached the correct conclusion", "0 at the trial cap the candidate was run with", "<th>Trial cap</th>",
 		"Scenarios compared: 2 of the role's 3",
 		">Cost efficiency</text>", "Low cost, high quality",
 		"Grounded (pass^1)", "All 3 grounded (pass^3)", "Reach / conduct", "Mean cost per trial", "Mean time per trial",

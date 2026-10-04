@@ -86,7 +86,9 @@ go run . [--log-level L] run [--config PATH] [--role R]... [--scenario S]... [--
 Merges saved results into one `result.json` and `index.html` (by default in
 `./.eval/bench/report-<time>/`). No model is called. A scenario whose content differs between the
 results is left out and listed; a candidate measured in more than one result is renamed
-`<name>@<run_id>`. The traces stay where they are, and the merged result points at them.
+`<name>@<run_id>`. Every candidate's cost efficiency is scored against the trial cap of the run it
+was measured in, so runs with different `plan.trial_cap_usd` can be merged; the report lists each
+candidate's cap. The traces stay where they are, and the merged result points at them.
 
 ### Flags and environment variables
 

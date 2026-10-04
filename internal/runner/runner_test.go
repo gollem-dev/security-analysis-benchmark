@@ -254,6 +254,8 @@ func TestAnEpisodeAnswersEveryCallAndGradesTheTranscript(t *testing.T) {
 	gt.S(t, res.RunID).HasSuffix("-0123456")
 	gt.A(t, res.Runs).Length(1).Required()
 	gt.S(t, res.Runs[0].Sampling).Equal(bench.SamplingProviderDefault)
+	gt.V(t, res.Runs[0].Plan).NotNil().Required()
+	gt.V(t, *res.Runs[0].Plan).Equal(res.Plan)
 	for _, m := range flash.generates2() {
 		gt.N(t, m).Equal(bench.DefaultPlan.MaxOutputTokens)
 	}
