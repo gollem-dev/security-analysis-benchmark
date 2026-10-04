@@ -31,3 +31,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Benchmark output, local research notes and working documents
+.eval/
+tmp/
+.spec/
