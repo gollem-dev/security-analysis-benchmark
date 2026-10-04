@@ -7,14 +7,13 @@ require (
 	cloud.google.com/go/bigquery v1.75.0
 	github.com/BurntSushi/toml v1.6.0
 	github.com/gollem-dev/agentkit v0.4.0
-	github.com/gollem-dev/gollem v0.30.0
+	github.com/gollem-dev/gollem v0.30.1-0.20261004054944-c0cb54b80d3f
 	github.com/m-mizutani/clog v0.2.1
 	github.com/m-mizutani/goerr/v2 v2.0.1
 	github.com/m-mizutani/gt v0.2.1
 	github.com/urfave/cli/v3 v3.11.0
 	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.278.0
-	google.golang.org/genai v1.53.0
 )
 
 require (
@@ -50,7 +49,7 @@ require (
 	github.com/pb33f/ordered-map/v2 v2.3.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.8 // indirect
-	github.com/sashabaranov/go-openai v1.41.2 // indirect
+	github.com/sashabaranov/go-openai v1.43.0 // indirect
 	github.com/standard-webhooks/standard-webhooks/libraries v0.0.1 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.2.0 // indirect
@@ -76,6 +75,7 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.49.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
+	google.golang.org/genai v1.53.0 // indirect
 	google.golang.org/genproto v0.0.0-20260319201613-d00831a3d3e7 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260706201446-f0a921348800 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260706201446-f0a921348800 // indirect

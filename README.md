@@ -63,6 +63,9 @@ go run . report --result .eval/bench/<run_id>/result.json --result <another>/res
 go run . list                             # the roles and their scenarios
 ```
 
+Keep your own configuration in `workspace/` (for example a copy of `examples/bench.toml` at
+`workspace/bench.toml`); git ignores that directory.
+
 ### run
 
 ```
@@ -141,8 +144,13 @@ and `claude-opus-5-5`; its forecast is about $20 against its `max_usd` of $30.
   (`claude-sonnet-5-5` and `claude-opus-5-5` for the bundled configuration), and enough quota on the
   global endpoint for `concurrency` calls at once. The price table holds the global endpoint's
   prices; multi-region and regional endpoints cost 10% more, so they are refused.
+- Where a provider charges more for long prompts (above 200k input tokens for Gemini, 272k for
+  OpenAI), the price table holds the short-prompt price: a benchmark call's prompt is a few thousand
+  tokens.
 - **claude** calls the Anthropic API with `BENCHMARK_ANTHROPIC_API_KEY`; **openai** calls the
-  OpenAI API with `BENCHMARK_OPENAI_API_KEY`.
+  OpenAI API with `BENCHMARK_OPENAI_API_KEY`. The openai candidates use the Responses API with
+  reasoning effort `low`, since GPT-6 models accept function tools with a reasoning effort only
+  there; gemini candidates are sent the thinking level `LOW`.
 
 ## Development
 
