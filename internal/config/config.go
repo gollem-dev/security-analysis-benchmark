@@ -37,7 +37,7 @@ const (
 	EnvGeminiLocation       = "BENCHMARK_GEMINI_LOCATION"
 	EnvClaudeVertexProject  = "BENCHMARK_CLAUDE_VERTEX_PROJECT"
 	EnvClaudeVertexLocation = "BENCHMARK_CLAUDE_VERTEX_LOCATION"
-	EnvAnthropicAPIKey      = "BENCHMARK_ANTHROPIC_API_KEY"
+	EnvAnthropicAPIKey      = "BENCHMARK_ANTHROPIC_API_KEY" // #nosec G101 -- the variable's name, not a key
 	EnvOpenAIAPIKey         = "BENCHMARK_OPENAI_API_KEY"
 )
 

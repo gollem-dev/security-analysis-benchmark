@@ -221,6 +221,7 @@ func WriteResult(path string, r *Result) error {
 	if err != nil {
 		return goerr.Wrap(err, "failed to encode a result")
 	}
+	// #nosec G306 -- the result is shared with the owner's group on purpose; it holds no secret.
 	if err := os.WriteFile(path, append(raw, '\n'), 0o640); err != nil {
 		return goerr.Wrap(err, "failed to write a result file", goerr.V("path", path))
 	}

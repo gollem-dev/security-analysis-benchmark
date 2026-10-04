@@ -204,6 +204,7 @@ func writeReport(dir string, res *bench.Result) (string, error) {
 		return "", err
 	}
 	index := filepath.Join(dir, "index.html")
+	// #nosec G306 -- the report is shared with the owner's group, as result.json is.
 	if err := os.WriteFile(index, []byte(page.String()), 0o640); err != nil {
 		return "", goerr.Wrap(err, "failed to write the report", goerr.V("path", index))
 	}

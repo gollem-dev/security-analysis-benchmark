@@ -126,7 +126,7 @@ func envFromFlags(cmd *cli.Command) config.Env {
 // binary built by go run carries no VCS information, so git is asked.
 func gitRevision(ctx context.Context) (string, string) {
 	read := func(args ...string) string {
-		out, err := exec.CommandContext(ctx, "git", args...).Output()
+		out, err := exec.CommandContext(ctx, "git", args...).Output() // #nosec G204 -- the arguments are this function's own
 		if err != nil || strings.TrimSpace(string(out)) == "" {
 			return "unknown"
 		}

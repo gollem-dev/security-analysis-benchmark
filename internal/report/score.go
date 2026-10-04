@@ -346,10 +346,11 @@ func fnv64a(s string) uint64 {
 // a candidate does not change another's draws. The seed is fixed, so a result is always reported
 // with the same intervals.
 func bootstrap(view *RoleView, samples [][]sample, measured, compared []int, weight func(int) float64, caps []pricing.NanoUSD, best int) {
+	// #nosec G404 -- the resampling must repeat from a fixed seed; nothing here is secret.
 	scenarioRNG := rand.New(rand.NewPCG(BootstrapSeed, 0))
 	trialRNG := map[int]*rand.Rand{}
 	for _, i := range measured {
-		trialRNG[i] = rand.New(rand.NewPCG(BootstrapSeed, fnv64a(view.Scores[i].Candidate)))
+		trialRNG[i] = rand.New(rand.NewPCG(BootstrapSeed, fnv64a(view.Scores[i].Candidate))) // #nosec G404 -- as above
 	}
 	quality := map[int][]float64{}
 	efficiency := map[int][]float64{}

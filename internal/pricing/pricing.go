@@ -30,10 +30,10 @@ func (n NanoUSD) USD4() string {
 func format(n NanoUSD, places int, round bool) string {
 	sign := ""
 	// Unsigned, so that the most negative amount is not negated into itself.
-	mag := uint64(n)
+	mag := uint64(n) // #nosec G115 -- replaced below when n is negative
 	if n < 0 {
 		sign = "-"
-		mag = uint64(-(n + 1)) + 1
+		mag = uint64(-(n + 1)) + 1 // #nosec G115 -- -(n+1) of a negative n is never negative
 	}
 	unit := uint64(1)
 	for range 9 - places {

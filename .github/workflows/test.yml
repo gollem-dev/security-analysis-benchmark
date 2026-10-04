@@ -1,0 +1,29 @@
+name: Unit test
+
+# Every push: language_test.go checks every committed file, not only Go sources.
+on:
+  push:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Run cicd-sensor
+        uses: cicd-sensor/cicd-sensor-action@6ee257338e68af2b279b321b3346fe5f385aa498 # v0.0.29
+
+      - name: Checkout upstream repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: "go.mod"
+          cache: true
+          cache-dependency-path: go.sum
+
+      # The SQL scenarios' tests start the BigQuery emulator with the runner's Docker; no model is
+      # called, since TestARunOnRealModels is skipped without BENCHMARK_CONFIG.
+      - name: Run tests
+        run: go test -race ./... -timeout 30m
