@@ -1,4 +1,4 @@
-// Package runner runs the benchmark: it forecasts a run's cost, runs every trial as a process on an
+// Package runner runs the benchmark: it records a run's forecast cost, runs every trial as a process on an
 // agentkit kernel whose middlewares hold the run to its money and record its traces, grades every
 // transcript and assembles the result.
 package runner
@@ -47,23 +47,6 @@ type Config struct {
 	Now func() time.Time
 }
 
-// ErrOverForecast is a run refused before any model call because its forecast exceeds max_usd. The
-// error is a *ForecastError.
-var ErrOverForecast = errors.New("the forecast cost exceeds max_usd")
-
-// ForecastError is the forecast a run was refused on.
-type ForecastError struct {
-	Lines  []bench.ForecastLine
-	Total  pricing.NanoUSD
-	MaxUSD pricing.NanoUSD
-}
-
-func (e *ForecastError) Error() string {
-	return fmt.Sprintf("the forecast cost %s exceeds max_usd %s", e.Total.USD4(), e.MaxUSD.USD())
-}
-
-func (e *ForecastError) Is(target error) bool { return target == ErrOverForecast }
-
 // run is what one run's trials share.
 type run struct {
 	cfg    Config
@@ -94,8 +77,8 @@ type prepared struct {
 	close    func()
 }
 
-// Run runs scenarios with the candidates that evaluate their roles. Nothing is generated when the
-// forecast exceeds max_usd, and the run never spends more than max_usd.
+// Run runs scenarios with the candidates that evaluate their roles. The run never spends more than
+// max_usd: the trials left when it is reached are not run.
 func Run(ctx context.Context, cfg Config, scenarios []bench.Scenario) (*bench.Result, error) {
 	if cfg.TrialTimeout <= 0 {
 		cfg.TrialTimeout = DefaultTrialTimeout
@@ -125,20 +108,13 @@ func Run(ctx context.Context, cfg Config, scenarios []bench.Scenario) (*bench.Re
 	})
 
 	var lines []bench.ForecastLine
-	var total pricing.NanoUSD
 	for _, c := range loaded.Candidates {
 		rate, ok := cfg.Prices.RateOf(c.Model)
 		if !ok {
 			return nil, goerr.New("a candidate's model has no price", goerr.V("candidate", c.Name), goerr.V("model", c.Model))
 		}
 		mine := slices.DeleteFunc(slices.Clone(scenarios), func(s bench.Scenario) bool { return !evaluates(c, s) })
-		for _, l := range bench.Forecast(c.Name, rate, mine, loaded.Plan.Trials) {
-			lines = append(lines, l)
-			total += l.NanoUSD
-		}
-	}
-	if total > loaded.MaxUSD {
-		return nil, &ForecastError{Lines: lines, Total: total, MaxUSD: loaded.MaxUSD}
+		lines = append(lines, bench.Forecast(c.Name, rate, mine, loaded.Plan.Trials)...)
 	}
 
 	r := &run{cfg: cfg, plan: loaded.Plan, logger: cfg.Logger, trials: &liveTrials{m: map[string]*liveTrial{}},

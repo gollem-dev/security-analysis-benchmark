@@ -2,14 +2,12 @@ package cli
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-	"text/tabwriter"
 
 	"github.com/m-mizutani/goerr/v2"
 	"github.com/urfave/cli/v3"
@@ -81,11 +79,6 @@ func (d *deps) run(ctx context.Context, cmd *cli.Command) error {
 	res, err := runner.Run(ctx, runner.Config{Loaded: loaded, Prices: prices, Commit: commit, Branch: branch,
 		EmulatorImage: cmd.String("bigquery-emulator-image"), Logger: d.logger, Clients: d.clients,
 		TrialTimeout: cmd.Duration("trial-timeout"), Now: d.now}, selected)
-	var fe *runner.ForecastError
-	if errors.As(err, &fe) {
-		printForecast(d, fe)
-		return err
-	}
 	if err != nil {
 		return err
 	}
@@ -104,17 +97,6 @@ func (d *deps) run(ctx context.Context, cmd *cli.Command) error {
 	}
 	_, _ = fmt.Fprintf(d.stdout, "benchmark finished: %s (spent %s of %s)\n", index, pricing.NanoUSD(res.SpentNanoUSD).USD(), limit.USD())
 	return nil
-}
-
-func printForecast(d *deps, fe *runner.ForecastError) {
-	w := tabwriter.NewWriter(d.stdout, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintln(w, "CANDIDATE\tROLE\tSCENARIO\tTRIALS\tCALLS\tUSD")
-	for _, l := range fe.Lines {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%s\n", l.Candidate, l.Role, l.Scenario, l.Trials, l.Calls, l.NanoUSD.USD4())
-	}
-	_ = w.Flush()
-	_, _ = fmt.Fprintf(d.stdout, "the forecast cost %s exceeds max_usd %s; to fit, remove candidates, narrow the run with --role or "+
-		"--scenario, lower plan.trials, or raise max_usd\n", fe.Total.USD4(), fe.MaxUSD.USD())
 }
 
 // selectRun narrows the configuration and the scenarios to the flags: the scenarios of the named

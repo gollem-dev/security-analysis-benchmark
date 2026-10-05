@@ -5,18 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Model Comparison Benchmark {{.RunID}}</title>
 <style>
-  :root {
-    --bg: #f6f7f5; --fg: #1c2320; --muted: #5d6762; --line: #cfd6d1; --grid: #e2e6e3; --panel: #ffffff; --warn: #b5542e;
-    --zone: #e3f0e9; --frontier: #7d8a84;
-    --c1: #2f6f5e; --c2: #b5542e; --c3: #4b5fa8; --c4: #8a7a1f; --c5: #7d3f8f; --c6: #2c7fa3;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #141917; --fg: #e3e8e5; --muted: #9aa6a0; --line: #35403b; --grid: #28312d; --panel: #1c2421; --warn: #e88a63;
-      --zone: #1e3329; --frontier: #8a9791;
-      --c1: #6fbfa8; --c2: #e88a63; --c3: #8fa2ea; --c4: #d4c35a; --c5: #c792d6; --c6: #74c1e3; }
-  }
-  .p1 { --pal: var(--c1); } .p2 { --pal: var(--c2); } .p3 { --pal: var(--c3); }
-  .p4 { --pal: var(--c4); } .p5 { --pal: var(--c5); } .p6 { --pal: var(--c6); }
+  {{template "tokens"}}
+  {{template "chartRules"}}
   body { margin: 0; background: var(--bg); color: var(--fg); padding: 1.2rem 16px 3rem;
     font: 15px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 64rem; margin: 0 auto; }
@@ -37,16 +27,6 @@
   .swatch { display: inline-block; width: .8em; height: .8em; border-radius: 50%; margin-right: .35em; vertical-align: -.05em; background: var(--pal); }
   .tag { display: inline-block; font-size: .75rem; border: 1px solid var(--line); border-radius: 3px; padding: 0 .3em; margin-left: .3em; color: var(--muted); }
   .small { font-size: .8rem; color: var(--muted); white-space: normal; }
-  svg text { fill: var(--fg); font-size: 15px; font-family: inherit; }
-  svg .muted { fill: var(--muted); }
-  svg .grid { stroke: var(--grid); stroke-width: 1; }
-  svg .axis { stroke: var(--line); stroke-width: 1.5; }
-  svg .zone { fill: var(--zone); }
-  svg .frontier { stroke: var(--frontier); stroke-width: 1.5; stroke-dasharray: 4 3; fill: none; }
-  svg .ci { stroke: var(--pal); stroke-width: 1.5; opacity: .5; }
-  svg circle.point { fill: var(--pal); stroke: var(--bg); stroke-width: 2; }
-  svg .leader { stroke: var(--pal); stroke-width: 1.2; }
-  svg text.name { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
 </style>
 </head>
 <body>
@@ -68,17 +48,7 @@
 {{range $c := .Charts}}
 <figure class="chart">
 <h3>{{.Label}}</h3>
-<svg viewBox="0 0 {{.Width}} {{.Height}}" role="img" aria-label="Quality and cost efficiency of {{.Label}}">
-  <rect class="zone" x="{{.ZoneX}}" y="{{.ZoneY}}" width="{{.ZoneW}}" height="{{.ZoneH}}"/>
-  {{range .XTicks}}<line class="grid" x1="{{.At}}" y1="{{$c.Top}}" x2="{{.At}}" y2="{{$c.Bottom}}"/><text x="{{.At}}" y="{{$c.Bottom}}" dy="22" class="muted" text-anchor="middle">{{.Label}}</text>{{end}}
-  {{range .YTicks}}<line class="grid" x1="{{$c.Left}}" y1="{{.At}}" x2="{{$c.Right}}" y2="{{.At}}"/><text x="{{$c.Left}}" y="{{.At}}" dx="-8" dy="5" class="muted" text-anchor="end">{{.Label}}</text>{{end}}
-  <line class="axis" x1="{{.Left}}" y1="{{.Bottom}}" x2="{{.Right}}" y2="{{.Bottom}}"/><line class="axis" x1="{{.Left}}" y1="{{.Top}}" x2="{{.Left}}" y2="{{.Bottom}}"/>
-  <text x="{{.MidX}}" y="{{.XTitleY}}" class="muted" text-anchor="middle">Cost efficiency</text>
-  <text x="18" y="{{.MidY}}" class="muted" text-anchor="middle" transform="rotate(-90 18 {{.MidY}})">Quality</text>
-  <text x="{{.Right}}" y="{{.Top}}" dx="-8" dy="22" class="muted" text-anchor="end">Low cost, high quality</text>
-  {{if .Frontier}}<polyline class="frontier" points="{{.Frontier}}"/>{{end}}
-  {{range .Points}}<g class="{{.Color}}"><line class="ci" x1="{{.X}}" y1="{{.QLow}}" x2="{{.X}}" y2="{{.QHigh}}"/><line class="ci" x1="{{.ELow}}" y1="{{.Y}}" x2="{{.EHigh}}" y2="{{.Y}}"/>{{if .Leader}}<line class="leader" x1="{{.X}}" y1="{{.Y}}" x2="{{.LeaderX}}" y2="{{.LeaderY}}"/>{{end}}<circle class="point" cx="{{.X}}" cy="{{.Y}}" r="9"><title>{{.Title}}</title></circle><text class="name" x="{{.LabelX}}" y="{{.LabelY}}">{{.Name}}</text></g>{{end}}
-</svg>
+{{template "chart" .}}
 <p class="small">{{.Compared}}</p>
 <div class="scroll"><table>
   <tr><th>Candidate</th><th>Quality</th><th>Cost efficiency</th><th>Grounded (pass^1)</th><th>All 3 grounded (pass^3)</th><th>Reach / conduct</th><th>Mean cost per trial</th><th>Mean time per trial</th><th>Gap to best (quality)</th><th>Unmeasured scenarios</th></tr>
@@ -129,3 +99,42 @@
 </main>
 </body>
 </html>
+{{define "tokens"}}:root {
+    --bg: #f6f7f5; --fg: #1c2320; --muted: #5d6762; --line: #cfd6d1; --grid: #e2e6e3; --panel: #ffffff; --warn: #b5542e;
+    --zone: #e3f0e9; --frontier: #7d8a84;
+    --c1: #2f6f5e; --c2: #b5542e; --c3: #4b5fa8; --c4: #8a7a1f; --c5: #7d3f8f; --c6: #2c7fa3; --c7: #a8405f; --c8: #4f6b2a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141917; --fg: #e3e8e5; --muted: #9aa6a0; --line: #35403b; --grid: #28312d; --panel: #1c2421; --warn: #e88a63;
+      --zone: #1e3329; --frontier: #8a9791;
+      --c1: #6fbfa8; --c2: #e88a63; --c3: #8fa2ea; --c4: #d4c35a; --c5: #c792d6; --c6: #74c1e3; --c7: #ec8fac; --c8: #a9cc7c; }
+  }{{end}}
+{{define "chartRules"}}.p1 { --pal: var(--c1); } .p2 { --pal: var(--c2); } .p3 { --pal: var(--c3); }
+  .p4 { --pal: var(--c4); } .p5 { --pal: var(--c5); } .p6 { --pal: var(--c6); }
+  .p7 { --pal: var(--c7); } .p8 { --pal: var(--c8); }
+  svg text { fill: var(--fg); font-size: 15px; font-family: inherit; }
+  svg .muted { fill: var(--muted); }
+  svg .grid { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--line); stroke-width: 1.5; }
+  svg .zone { fill: var(--zone); }
+  svg .frontier { stroke: var(--frontier); stroke-width: 1.5; stroke-dasharray: 4 3; fill: none; }
+  svg .ci { stroke: var(--pal); stroke-width: 1.5; opacity: .5; }
+  svg circle.point { fill: var(--pal); stroke: var(--bg); stroke-width: 2; }
+  svg .leader { stroke: var(--pal); stroke-width: 1.2; }
+  svg text.name { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }{{end}}
+{{define "chart"}}{{$c := .}}<svg xmlns="http://www.w3.org/2000/svg" width="{{.Width}}" height="{{.Height}}" viewBox="0 0 {{.Width}} {{.Height}}" role="img" aria-label="Quality and cost efficiency of {{.Label}}">
+  {{if .Standalone}}<style>
+  {{template "tokens"}}
+  {{template "chartRules"}}
+  svg { background: var(--panel); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  </style>{{end}}
+  <rect class="zone" x="{{.ZoneX}}" y="{{.ZoneY}}" width="{{.ZoneW}}" height="{{.ZoneH}}"/>
+  {{range .XTicks}}<line class="grid" x1="{{.At}}" y1="{{$c.Top}}" x2="{{.At}}" y2="{{$c.Bottom}}"/><text x="{{.At}}" y="{{$c.Bottom}}" dy="22" class="muted" text-anchor="middle">{{.Label}}</text>{{end}}
+  {{range .YTicks}}<line class="grid" x1="{{$c.Left}}" y1="{{.At}}" x2="{{$c.Right}}" y2="{{.At}}"/><text x="{{$c.Left}}" y="{{.At}}" dx="-8" dy="5" class="muted" text-anchor="end">{{.Label}}</text>{{end}}
+  <line class="axis" x1="{{.Left}}" y1="{{.Bottom}}" x2="{{.Right}}" y2="{{.Bottom}}"/><line class="axis" x1="{{.Left}}" y1="{{.Top}}" x2="{{.Left}}" y2="{{.Bottom}}"/>
+  <text x="{{.MidX}}" y="{{.XTitleY}}" class="muted" text-anchor="middle">Cost efficiency</text>
+  <text x="18" y="{{.MidY}}" class="muted" text-anchor="middle" transform="rotate(-90 18 {{.MidY}})">Quality</text>
+  <text x="{{.Right}}" y="{{.Top}}" dx="-8" dy="22" class="muted" text-anchor="end">Low cost, high quality</text>
+  {{if .Frontier}}<polyline class="frontier" points="{{.Frontier}}"/>{{end}}
+  {{range .Points}}<g class="{{.Color}}"><line class="ci" x1="{{.X}}" y1="{{.QLow}}" x2="{{.X}}" y2="{{.QHigh}}"/><line class="ci" x1="{{.ELow}}" y1="{{.Y}}" x2="{{.EHigh}}" y2="{{.Y}}"/>{{if .Leader}}<line class="leader" x1="{{.X}}" y1="{{.Y}}" x2="{{.LeaderX}}" y2="{{.LeaderY}}"/>{{end}}<circle class="point" cx="{{.X}}" cy="{{.Y}}" r="9"><title>{{.Title}}</title></circle><text class="name" x="{{.LabelX}}" y="{{.LabelY}}">{{.Name}}</text></g>{{end}}
+</svg>{{end}}

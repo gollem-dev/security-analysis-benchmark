@@ -412,15 +412,20 @@ func (c *scriptedClient) toolSets() [][]string {
 	return append([][]string(nil), c.tools...)
 }
 
-func TestARunOverItsForecastCallsNoModel(t *testing.T) {
+// A forecast above max_usd does not stop the run; max_usd still bounds what it spends.
+func TestARunOverItsForecastRunsWithinMaxUSD(t *testing.T) {
 	flash := &scriptedClient{model: "gemini-3.8-flash", reply: followAPI(1)}
-	_, err := runner.Run(context.Background(), cfg(t, loaded(t, "0.01", plan(4), "flash"),
+	res, err := runner.Run(context.Background(), cfg(t, loaded(t, "0.10", plan(8), "flash"),
 		map[string]*scriptedClient{"flash": flash}), scenarios(t, "investigate-vague-report"))
-	gt.True(t, errors.Is(err, runner.ErrOverForecast))
-	var fe *runner.ForecastError
-	gt.True(t, errors.As(err, &fe))
-	gt.A(t, fe.Lines).Length(1)
-	gt.N(t, flash.generates()).Equal(0)
+	gt.NoError(t, err).Required()
+	max, _ := pricing.ParseUSD("0.10")
+	var forecast pricing.NanoUSD
+	for _, l := range res.Forecast {
+		forecast += l.NanoUSD
+	}
+	gt.B(t, forecast > max).True()
+	gt.N(t, flash.generates()).Greater(0)
+	gt.B(t, res.SpentNanoUSD <= int64(max)).True()
 }
 
 // followAPI(8000) costs $0.03 a call on gemini-3.8-flash and its worst case is reserved at about

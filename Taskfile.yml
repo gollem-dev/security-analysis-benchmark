@@ -1,0 +1,37 @@
+version: "3"
+
+vars:
+  CONFIG: bench.toml
+  RESULTS_DIR: results
+
+tasks:
+  bench:
+    desc: Run every candidate of bench.toml, keep the full result under .eval/bench/, and publish its report
+    vars:
+      OUT: '.eval/bench/{{now | date "20060102T150405"}}'
+    cmds:
+      - go run . run --config {{.CONFIG}} --out {{.OUT}}
+      - task: publish
+        vars:
+          RESULTS: "{{.OUT}}/result.json"
+
+  publish:
+    desc: 'Merge saved results and publish the report to results/<yyyymmdd>/<id>/ and results/latest/ (RESULTS="a/result.json b/result.json")'
+    requires:
+      vars: [RESULTS]
+    cmds:
+      - >-
+        go run . report
+        {{range (splitList " " .RESULTS)}}--result {{.}} {{end}}
+        --publish {{.RESULTS_DIR}}
+
+  test:
+    desc: Run the tests
+    cmds:
+      - go test ./...
+
+  lint:
+    desc: Run the linters
+    cmds:
+      - golangci-lint run ./...
+      - gosec -exclude-generated -quiet ./...

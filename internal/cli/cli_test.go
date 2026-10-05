@@ -20,7 +20,6 @@ import (
 	"github.com/gollem-dev/security-analysis-benchmark/internal/bench"
 	clipkg "github.com/gollem-dev/security-analysis-benchmark/internal/cli"
 	"github.com/gollem-dev/security-analysis-benchmark/internal/config"
-	"github.com/gollem-dev/security-analysis-benchmark/internal/pricing"
 	"github.com/gollem-dev/security-analysis-benchmark/internal/scenario"
 )
 
@@ -203,15 +202,15 @@ func TestOnlyTheNamedScenariosRun(t *testing.T) {
 	gt.A(t, ids).Equal([]string{"sql-named", "api-named"})
 }
 
-func TestARunOverItsForecastPrintsTheForecast(t *testing.T) {
-	cfg := configFile(t, "max_usd = \"0.01\"\n"+candidate)
+// A forecast above max_usd does not stop the run.
+func TestARunOverItsForecastRuns(t *testing.T) {
+	// The forecast of 10 trials of api-named on gemini-3.8-flash is about $0.17.
+	cfg := configFile(t, "max_usd = \"0.10\"\n[plan]\ntrials = 10\n"+candidate)
 	client := &fakeClient{}
-	o := run(t, client, "run", "--config", cfg, "--google-cloud-project", "p", "--out", t.TempDir())
-	gt.N(t, o.code).Equal(1)
-	gt.N(t, client.generates()).Equal(0)
-	gt.S(t, o.stdout).Contains("CANDIDATE  ROLE")
-	gt.S(t, o.stdout).Contains("investigate-insider")
-	gt.S(t, o.stdout).Contains("exceeds max_usd $0.01; to fit, remove candidates, narrow the run with --role or --scenario, lower plan.trials, or raise max_usd")
+	o := run(t, client, "run", "--config", cfg, "--google-cloud-project", "p", "--scenario", "api-named", "--out", t.TempDir())
+	gt.N(t, o.code).Equal(0)
+	gt.N(t, client.generates()).Greater(0)
+	gt.S(t, o.stdout).Contains("benchmark finished")
 }
 
 func TestTheConfigurationComesFromTheFlagOrTheEnvironment(t *testing.T) {
@@ -338,6 +337,32 @@ func TestReportMergesSavedResults(t *testing.T) {
 	gt.A(t, res.Runs).Length(2)
 }
 
+func TestReportPublishesThePageAndChartsAndTheLatestCopy(t *testing.T) {
+	cfg := configFile(t, "[plan]\ntrials = 1\n"+candidate)
+	base := t.TempDir()
+	runDir := filepath.Join(base, "run")
+	gt.N(t, run(t, &fakeClient{}, "run", "--config", cfg, "--google-cloud-project", "p", "--scenario", "api-named", "--out", runDir).code).Equal(0)
+
+	o := run(t, &fakeClient{}, "report", "--result", filepath.Join(runDir, "result.json"), "--out", filepath.Join(base, "merged"),
+		"--publish", filepath.Join(base, "results"))
+	gt.N(t, o.code).Equal(0)
+	gt.S(t, o.stdout).Contains("report published: ")
+
+	dated, err := filepath.Glob(filepath.Join(base, "results", "2*", "*"))
+	gt.NoError(t, err).Required()
+	gt.A(t, dated).Length(1).Required()
+	// Nothing but the page and the charts is published, in the report's own directory and in latest.
+	for _, dir := range []string{dated[0], filepath.Join(base, "results", "latest")} {
+		entries, err := os.ReadDir(dir)
+		gt.NoError(t, err).Required()
+		var names []string
+		for _, e := range entries {
+			names = append(names, e.Name())
+		}
+		gt.A(t, names).Equal([]string{"index.html", "worker.svg"})
+	}
+}
+
 func TestAnOutputDirectoryThatCannotBeWrittenFails(t *testing.T) {
 	cfg := configFile(t, "[plan]\ntrials = 1\n"+candidate)
 	blocker := filepath.Join(t.TempDir(), "file")
@@ -361,25 +386,6 @@ func TestARunWithoutGitIsNamedUnknown(t *testing.T) {
 	res, err := bench.ReadResult(filepath.Join(out, "result.json"))
 	gt.NoError(t, err).Required()
 	gt.S(t, res.RunID).HasSuffix("-unknown")
-}
-
-// The bundled configuration's forecast fits its own max_usd.
-func TestTheBundledConfigurationFitsItsLimit(t *testing.T) {
-	prices, err := pricing.Embedded()
-	gt.NoError(t, err).Required()
-	l, err := config.Load(filepath.Join("..", "..", "examples", "bench.toml"), config.Env{GoogleCloudProject: "p"}, prices)
-	gt.NoError(t, err).Required()
-	all, err := scenario.All()
-	gt.NoError(t, err).Required()
-	var total pricing.NanoUSD
-	for _, c := range l.Candidates {
-		rate, _ := prices.RateOf(c.Model)
-		for _, line := range bench.Forecast(c.Name, rate, all, l.Plan.Trials) {
-			total += line.NanoUSD
-		}
-	}
-	t.Logf("forecast %s of %s", total.USD4(), l.MaxUSD.USD())
-	gt.B(t, total <= l.MaxUSD).True()
 }
 
 // A run on real models, only when BENCHMARK_CONFIG names a configuration: it costs money.
