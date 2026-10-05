@@ -23,7 +23,7 @@ var page = template.Must(template.New("report").Parse(pageSource))
 
 // palette is the candidates' colours in order, as classes: html/template replaces a CSS variable in
 // a style attribute with a placeholder, so a colour cannot be given there.
-var palette = []string{"p1", "p2", "p3", "p4", "p5", "p6"}
+var palette = []string{"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}
 
 var endLabels = []struct {
 	end   bench.End
@@ -39,6 +39,26 @@ func Render(w io.Writer, r *bench.Result) error {
 		return goerr.Wrap(err, "failed to render the report", goerr.V("run_id", r.RunID))
 	}
 	return nil
+}
+
+// Chart is one role's chart of quality against cost efficiency, as an SVG document.
+type Chart struct {
+	Role string
+	SVG  []byte
+}
+
+// Charts renders each role's chart of r as an SVG document, in the order the page shows them.
+func Charts(r *bench.Result) ([]Chart, error) {
+	var charts []Chart
+	for _, cv := range build(r).Charts {
+		cv.Standalone = true
+		var b strings.Builder
+		if err := page.ExecuteTemplate(&b, "chart", cv); err != nil {
+			return nil, goerr.Wrap(err, "failed to render a chart", goerr.V("run_id", r.RunID), goerr.V("role", cv.Label))
+		}
+		charts = append(charts, Chart{Role: cv.Label, SVG: []byte(b.String())})
+	}
+	return charts, nil
 }
 
 type pageData struct {
@@ -59,7 +79,9 @@ type candidateRow struct{ Name, Color, Provider, Model, TrialCap, Spent, Baselin
 type tick struct{ At, Label string }
 
 type chartView struct {
-	Label                      string
+	Label string
+	// Standalone makes the chart a document of its own, carrying the styles the page otherwise gives it.
+	Standalone                 bool
 	Width, Height              int
 	Left, Right, Top, Bottom   string
 	MidX, MidY, XTitleY        string

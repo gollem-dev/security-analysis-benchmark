@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/gollem-dev/security-analysis-benchmark/internal/bench"
+	"github.com/gollem-dev/security-analysis-benchmark/internal/publish"
 )
 
 func reportCommand(d *deps) *cli.Command {
@@ -19,6 +20,8 @@ func reportCommand(d *deps) *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{Name: "result", Usage: "a result.json to merge; repeatable", Required: true},
 			&cli.StringFlag{Name: "out", Usage: "the output directory (default ./.eval/bench/report-<time>/)"},
+			&cli.StringFlag{Name: "publish", Usage: "also write the page and one SVG chart per role to <dir>/<yyyymmdd>/<id>/, " +
+				"and replace <dir>/latest/ with the same files"},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error { return d.report(cmd) },
 	}
@@ -50,5 +53,12 @@ func (d *deps) report(cmd *cli.Command) error {
 		return err
 	}
 	_, _ = fmt.Fprintf(d.stdout, "report written: %s\n", index)
+	if root := cmd.String("publish"); root != "" {
+		dir, err := publish.Report(root, merged)
+		if err != nil {
+			return err
+		}
+		_, _ = fmt.Fprintf(d.stdout, "report published: %s\n", dir)
+	}
 	return nil
 }

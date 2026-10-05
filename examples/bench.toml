@@ -1,7 +1,7 @@
 # The benchmark's configuration. Google Cloud projects, locations and API keys are not written here:
 # they are given as environment variables (or flags), as the README describes.
 
-max_usd = "30.00" # the most the whole run may spend; the forecast must fit it too
+max_usd = "30.00" # the most the whole run may spend; trials left when it is reached are not run
 
 [plan]
 trials            = 6      # trials of every scenario by every candidate
