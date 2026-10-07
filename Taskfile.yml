@@ -3,26 +3,25 @@ version: "3"
 vars:
   CONFIG: bench.toml
   RESULTS_DIR: results
+  HISTORY_DIR: results/runs
 
 tasks:
   bench:
-    desc: Run every candidate of bench.toml, keep the full result under .eval/bench/, and publish its report
+    desc: 'Run the candidates of bench.toml (all, or CANDIDATES="a b"), save the result to results/runs/, and publish the report of every candidate'
     vars:
       OUT: '.eval/bench/{{now | date "20060102T150405"}}'
     cmds:
-      - go run . run --config {{.CONFIG}} --out {{.OUT}}
+      - >-
+        go run . run --config {{.CONFIG}} --out {{.OUT}} --history {{.HISTORY_DIR}}
+        {{range (splitList " " (.CANDIDATES | default ""))}}{{if .}}--candidate {{.}} {{end}}{{end}}
       - task: publish
-        vars:
-          RESULTS: "{{.OUT}}/result.json"
 
   publish:
-    desc: 'Merge saved results and publish the report to results/<yyyymmdd>/<id>/ and results/latest/ (RESULTS="a/result.json b/result.json")'
-    requires:
-      vars: [RESULTS]
+    desc: 'Publish the report of every candidate of bench.toml, each from its newest result in results/runs/ (or among RESULTS="a/result.json b/result.json"), to results/<yyyymmdd>/<id>/ and results/latest/'
     cmds:
       - >-
-        go run . report
-        {{range (splitList " " .RESULTS)}}--result {{.}} {{end}}
+        go run . report --config {{.CONFIG}} --history {{.HISTORY_DIR}}
+        {{range (splitList " " (.RESULTS | default ""))}}{{if .}}--result {{.}} {{end}}{{end}}
         --publish {{.RESULTS_DIR}}
 
   test:

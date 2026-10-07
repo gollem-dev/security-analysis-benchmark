@@ -215,14 +215,23 @@ func ReadResult(path string) (*Result, error) {
 	return &out, nil
 }
 
-// WriteResult writes r to path, readable by its owner's group only.
-func WriteResult(path string, r *Result) error {
+// EncodeResult is r as a result file holds it.
+func EncodeResult(r *Result) ([]byte, error) {
 	raw, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
-		return goerr.Wrap(err, "failed to encode a result")
+		return nil, goerr.Wrap(err, "failed to encode a result", goerr.V("run_id", r.RunID))
+	}
+	return append(raw, '\n'), nil
+}
+
+// WriteResult writes r to path, readable by its owner's group only.
+func WriteResult(path string, r *Result) error {
+	raw, err := EncodeResult(r)
+	if err != nil {
+		return err
 	}
 	// #nosec G306 -- the result is shared with the owner's group on purpose; it holds no secret.
-	if err := os.WriteFile(path, append(raw, '\n'), 0o640); err != nil {
+	if err := os.WriteFile(path, raw, 0o640); err != nil {
 		return goerr.Wrap(err, "failed to write a result file", goerr.V("path", path))
 	}
 	return nil

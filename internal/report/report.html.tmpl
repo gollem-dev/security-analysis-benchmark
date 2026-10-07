@@ -61,8 +61,8 @@
 
 <h2>Candidates</h2>
 <div class="scroll"><table>
-  <tr><th>Candidate</th><th>Provider</th><th>Model</th><th>Trial cap</th><th>Spent</th><th>Baseline for</th></tr>
-  {{range .Candidates}}<tr><td><span class="swatch {{.Color}}"></span>{{.Name}}</td><td>{{.Provider}}</td><td>{{.Model}}</td><td class="num">{{.TrialCap}}</td><td class="num">{{.Spent}}</td><td>{{.Baseline}}</td></tr>
+  <tr><th>Candidate</th><th>Provider</th><th>Model</th><th>Measured in run</th><th>Trial cap</th><th>Spent</th><th>Baseline for</th></tr>
+  {{range .Candidates}}<tr><td><span class="swatch {{.Color}}"></span>{{.Name}}</td><td>{{.Provider}}</td><td>{{.Model}}</td><td>{{.Run}}</td><td class="num">{{.TrialCap}}</td><td class="num">{{.Spent}}</td><td>{{.Baseline}}</td></tr>
   {{end}}
 </table></div>
 

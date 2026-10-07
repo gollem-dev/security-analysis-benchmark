@@ -1,6 +1,7 @@
 package report
 
 import (
+	"cmp"
 	_ "embed"
 	"fmt"
 	"html/template"
@@ -74,7 +75,7 @@ type pageData struct {
 
 type runRow struct{ Run, Commit, Started, Go, Gollem, Agentkit, BigQuery, Sampling string }
 
-type candidateRow struct{ Name, Color, Provider, Model, TrialCap, Spent, Baseline string }
+type candidateRow struct{ Name, Color, Provider, Model, Run, TrialCap, Spent, Baseline string }
 
 type tick struct{ At, Label string }
 
@@ -174,7 +175,7 @@ func build(r *bench.Result) pageData {
 			baseline = append(baseline, string(role))
 		}
 		d.Candidates = append(d.Candidates, candidateRow{Name: c.Name, Color: color[c.Name], Provider: c.Provider, Model: c.Model,
-			TrialCap: r.PlanOf(c.Name).TrialCapUSD.USD(), Spent: pricing.NanoUSD(c.CostNanoUSD).USD4(), Baseline: strings.Join(baseline, ", ")})
+			Run: cmp.Or(c.RunID, r.RunID), TrialCap: r.PlanOf(c.Name).TrialCapUSD.USD(), Spent: pricing.NanoUSD(c.CostNanoUSD).USD4(), Baseline: strings.Join(baseline, ", ")})
 	}
 	for _, view := range Roles(r) {
 		d.Charts = append(d.Charts, chart(r, view, color))
