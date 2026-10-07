@@ -185,10 +185,12 @@ func TestARunWritesItsResultReportAndTraces(t *testing.T) {
 	gt.A(t, res.Candidates[0].Current).Equal([]bench.Role{bench.RoleWorker})
 }
 
+// API scenarios only: fakeClient's report cites call IDs, which an SQL scenario's report_result
+// refuses, so an SQL trial would generate until its cap; it would also need the emulator.
 func TestOnlyTheNamedScenariosRun(t *testing.T) {
 	cfg := configFile(t, "[plan]\ntrials = 1\n"+candidate)
 	out := t.TempDir()
-	o := run(t, &fakeClient{}, "run", "--config", cfg, "--google-cloud-project", "p", "--scenario", "sql-named",
+	o := run(t, &fakeClient{}, "run", "--config", cfg, "--google-cloud-project", "p", "--scenario", "api-business-term",
 		"--scenario", "api-named", "--out", out)
 	gt.N(t, o.code).Equal(0)
 	res, err := bench.ReadResult(filepath.Join(out, "result.json"))
@@ -199,7 +201,7 @@ func TestOnlyTheNamedScenariosRun(t *testing.T) {
 			ids = append(ids, s.ID)
 		}
 	}
-	gt.A(t, ids).Equal([]string{"sql-named", "api-named"})
+	gt.A(t, ids).Equal([]string{"api-named", "api-business-term"})
 }
 
 // A forecast above max_usd does not stop the run.
