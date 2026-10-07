@@ -27,6 +27,21 @@ func (n NanoUSD) USD4() string {
 	return format(n, 4, true)
 }
 
+// USD2Sig formats the amount to four places, or to more places, up to nine, until it shows two
+// significant digits, rounding half up: "$0.0831", "$0.00075". Zero stays at four places.
+func (n NanoUSD) USD2Sig() string {
+	mag := uint64(n) // #nosec G115 -- replaced below when n is negative
+	if n < 0 {
+		mag = uint64(-(n + 1)) + 1 // #nosec G115 -- -(n+1) of a negative n is never negative
+	}
+	places := 4
+	// At p places the amount shows mag / 10^(9-p) units, which has two digits from 10^(10-p).
+	for limit := uint64(1_000_000); mag > 0 && places < 9 && mag < limit; limit /= 10 {
+		places++
+	}
+	return format(n, places, true)
+}
+
 func format(n NanoUSD, places int, round bool) string {
 	sign := ""
 	// Unsigned, so that the most negative amount is not negated into itself.
@@ -40,7 +55,8 @@ func format(n NanoUSD, places int, round bool) string {
 		unit *= 10
 	}
 	units := mag / unit
-	if round && mag%unit >= unit/2 {
+	// At nine places there is nothing below the last place to round.
+	if round && unit > 1 && mag%unit >= unit/2 {
 		units++
 	}
 	scale := uint64(1)

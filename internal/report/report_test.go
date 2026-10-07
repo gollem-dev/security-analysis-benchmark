@@ -53,13 +53,13 @@ func TestThePageShowsEveryState(t *testing.T) {
 		"Run 20261003T000000Z-0123456 · commit 0123456 · started 2026-10-03 00:00 UTC · spent $7.86 of $30.00",
 		"An LLM call cost $0.0400, more than the $0.0350 reserved for it before the call.",
 		"<h2>Runs</h2>", "r2", "Provider defaults", "v0.29.0",
-		"Quality and cost efficiency", "<h3>worker</h3>",
-		"is whether a trial reached the correct conclusion", "0 at the trial cap the candidate was run with", "<th>Trial cap</th>",
+		"<h2>Quality and cost</h2>", "<h3>worker</h3>",
+		"is whether a trial reached the correct conclusion", "a tenfold difference in cost spans the same distance anywhere on the axis", "<th>Trial cap</th>",
 		"Scenarios compared: 2 of the role's 3",
-		">Cost efficiency</text>", "Low cost, high quality",
+		">Mean cost per trial (log scale, cheaper to the right)</text>", ">$0.01</text>",
 		"Grounded (pass^1)", "All 3 grounded (pass^3)", "Reach / conduct", "Mean cost per trial", "Mean time per trial",
 		"Gap to best (quality)", "Unmeasured scenarios", "baseline", "best", "not distinguishable", "not measured",
-		"Difficulty 1: quality 100, cost efficiency 100",
+		"Difficulty 1: quality 100, mean cost $0.0100", "Difficulty 2: quality 0, mean cost $0.0200", "$0.0150 [",
 		"Candidates", "Results by scenario", "SQL exploration", "API exploration",
 		"api-named (difficulty 1, fewest actions 2, estimated LLM calls 0)",
 		"Ceiling: every candidate measured reached a grounded conclusion in every trial",
@@ -70,6 +70,9 @@ func TestThePageShowsEveryState(t *testing.T) {
 		"Scenarios not merged", "worker / api-indirect: the scenario's content differs between runs (version 1 and 2)",
 	} {
 		gt.S(t, page).Contains(want)
+	}
+	for _, gone := range []string{"Cost efficiency", "cost efficiency", "Low cost, high quality", `class="zone"`} {
+		gt.S(t, page).NotContains(gone)
 	}
 }
 
@@ -98,7 +101,7 @@ func TestEachRoleChartIsAnSVGDocumentWithItsOwnStyles(t *testing.T) {
 	gt.S(t, svg).HasPrefix(`<svg xmlns="http://www.w3.org/2000/svg"`)
 	gt.S(t, svg).HasSuffix("</svg>")
 	// Colours resolve inside the document, in both colour schemes.
-	for _, want := range []string{"<style>", "--c1: #2f6f5e", "prefers-color-scheme: dark", "svg .grid", `class="p1"`, ">Cost efficiency</text>"} {
+	for _, want := range []string{"<style>", "--c1: #2f6f5e", "prefers-color-scheme: dark", "svg .grid", `class="p1"`, ">Mean cost per trial (log scale, cheaper to the right)</text>"} {
 		gt.S(t, svg).Contains(want)
 	}
 	gt.S(t, svg).NotContains("ZgotmplZ")

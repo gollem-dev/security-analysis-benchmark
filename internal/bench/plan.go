@@ -10,7 +10,7 @@ import (
 type Plan struct {
 	// Trials is how many times every candidate runs every scenario of its roles.
 	Trials int `json:"trials"`
-	// TrialCapUSD is the most one trial may spend, and the cost at which efficiency is zero.
+	// TrialCapUSD is the most one trial may spend.
 	TrialCapUSD pricing.NanoUSD `json:"trial_cap_nano_usd"`
 	// MaxOutputTokens is the most one LLM call may write, thinking included. It bounds a call's
 	// worst case, so it is sent with every call.

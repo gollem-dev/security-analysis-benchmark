@@ -36,13 +36,6 @@ func TestConductFactor(t *testing.T) {
 	near(t, report.ConductFactor(bench.Conduct{Actions: 2, Explore: 2, Minimal: 1}), 0)
 }
 
-func TestEfficiency(t *testing.T) {
-	cap := bench.DefaultPlan.TrialCapUSD
-	near(t, report.Efficiency(10_000_000, cap), 100)
-	near(t, report.Efficiency(int64(cap), cap), 0)
-	near(t, report.Efficiency(20_000_000, cap), 100*math.Log(2e9/2e7)/math.Log(2e9/1e7))
-}
-
 func TestPassHatK(t *testing.T) {
 	p, ok := report.PassHatK(6, 6, 3)
 	gt.B(t, ok).True()
@@ -124,11 +117,12 @@ func TestScoresRestOnTheScenariosEveryCandidateWasMeasuredOn(t *testing.T) {
 	gt.S(t, view.Best).Equal("a")
 	gt.B(t, a.ByDifficulty[0].Measured && a.ByDifficulty[1].Measured).True()
 	gt.B(t, a.ByDifficulty[2].Measured).False()
+	gt.N(t, a.ByDifficulty[0].MeanCostNanoUSD).Equal(int64(1e7))
 	near(t, a.MeanSeconds, 10)
 }
 
-// Candidates measured under different trial caps are each scored against their own cap.
-func TestEfficiencyIsScoredAgainstEachCandidatesOwnCap(t *testing.T) {
+// Candidates measured under different trial caps are set side by side on what they spent alone.
+func TestCostIsTheSameUnderAnyTrialCap(t *testing.T) {
 	r := resultOf([]string{"a", "b"},
 		scenarioOf("s1", 1, append(trials("a", []bool{true, true}, 4e8), trials("b", []bool{true, true}, 4e8)...)...))
 	low, high := bench.DefaultPlan, bench.DefaultPlan
@@ -136,11 +130,9 @@ func TestEfficiencyIsScoredAgainstEachCandidatesOwnCap(t *testing.T) {
 	r.Candidates[0].RunID, r.Candidates[1].RunID = "ra", "rb"
 	r.Runs = []bench.RunManifest{{RunID: "ra", Plan: &low}, {RunID: "rb", Plan: &high}}
 	view := report.Roles(r)[0]
-	near(t, view.Scores[0].Efficiency, report.Efficiency(4e8, low.TrialCapUSD))
-	near(t, view.Scores[1].Efficiency, report.Efficiency(4e8, high.TrialCapUSD))
-	gt.B(t, view.Scores[0].Efficiency < view.Scores[1].Efficiency).True()
-	gt.B(t, view.Scores[0].EfficiencyCI.Contains(view.Scores[0].Efficiency)).True()
-	gt.B(t, view.Scores[1].EfficiencyCI.Contains(view.Scores[1].Efficiency)).True()
+	gt.N(t, view.Scores[0].MeanCostNanoUSD).Equal(int64(4e8))
+	gt.N(t, view.Scores[1].MeanCostNanoUSD).Equal(int64(4e8))
+	gt.V(t, view.Scores[0].CostCI).Equal(view.Scores[1].CostCI)
 }
 
 func TestIntervalsAreFixedAndHoldThePointEstimate(t *testing.T) {
@@ -151,12 +143,23 @@ func TestIntervalsAreFixedAndHoldThePointEstimate(t *testing.T) {
 	first, again := report.Roles(r)[0], report.Roles(r)[0]
 	for i, sc := range first.Scores {
 		gt.V(t, sc.QualityCI).Equal(again.Scores[i].QualityCI)
-		gt.V(t, sc.EfficiencyCI).Equal(again.Scores[i].EfficiencyCI)
+		gt.V(t, sc.CostCI).Equal(again.Scores[i].CostCI)
 		gt.B(t, sc.QualityCI.Contains(sc.Quality)).True()
-		gt.B(t, sc.EfficiencyCI.Contains(sc.Efficiency)).True()
+		gt.B(t, sc.CostCI.Contains(float64(sc.MeanCostNanoUSD))).True()
 		gt.B(t, sc.GroundedCI.Contains(sc.GroundedRate)).True()
 		gt.B(t, sc.QualityCI.High > sc.QualityCI.Low).True()
 	}
+	// Every trial of a costs less than every trial of b, and so does every resample.
+	gt.B(t, first.Scores[0].CostCI.High < first.Scores[1].CostCI.Low).True()
+}
+
+// The cost interval resamples the trials within a scenario: of a free trial and one of $0.02, a
+// quarter of the resamples draw the free one twice and a quarter the other twice.
+func TestTheCostIntervalResamplesTrials(t *testing.T) {
+	r := resultOf([]string{"a"}, scenarioOf("s1", 1, trial("a", 1, true, 0), trial("a", 2, true, 2e7)))
+	sc := report.Roles(r)[0].Scores[0]
+	gt.N(t, sc.MeanCostNanoUSD).Equal(int64(1e7))
+	gt.V(t, sc.CostCI).Equal(report.Interval{Low: 0, High: 2e7})
 }
 
 func TestAnIntervalOfUnvaryingQualityHasNoWidth(t *testing.T) {
@@ -169,7 +172,7 @@ func TestAnIntervalOfUnvaryingQualityHasNoWidth(t *testing.T) {
 	one := resultOf([]string{"a"}, scenarioOf("s1", 1, trials("a", []bool{true}, 3e7)...))
 	sc = report.Roles(one)[0].Scores[0]
 	gt.V(t, sc.QualityCI).Equal(report.Interval{Low: sc.Quality, High: sc.Quality})
-	gt.V(t, sc.EfficiencyCI).Equal(report.Interval{Low: sc.Efficiency, High: sc.Efficiency})
+	gt.V(t, sc.CostCI).Equal(report.Interval{Low: 3e7, High: 3e7})
 	gt.B(t, sc.PassKMeasured).False()
 }
 
@@ -215,12 +218,21 @@ func TestCeilingAndFloor(t *testing.T) {
 
 func TestPareto(t *testing.T) {
 	scores := []report.RoleScore{
-		{Candidate: "a", Measured: true, Quality: 80, Efficiency: 50},
-		{Candidate: "b", Measured: true, Quality: 60, Efficiency: 90},
-		{Candidate: "c", Measured: true, Quality: 50, Efficiency: 40},
+		{Candidate: "a", Measured: true, Quality: 80, MeanCostNanoUSD: 5e7},
+		{Candidate: "b", Measured: true, Quality: 60, MeanCostNanoUSD: 1e6},
+		{Candidate: "c", Measured: true, Quality: 50, MeanCostNanoUSD: 6e7},
 		{Candidate: "d", Measured: false},
 	}
+	// From the costliest to the cheapest, as the chart draws them from left to right.
 	gt.A(t, report.Pareto(scores)).Equal([]int{0, 1})
+	gt.A(t, report.Pareto([]report.RoleScore{scores[1], scores[0]})).Equal([]int{1, 0})
 	gt.V(t, report.Pareto(scores[:1])).Nil()
 	gt.V(t, report.Pareto([]report.RoleScore{scores[0], scores[2]})).Nil()
+
+	// Of two of the same quality, the cheaper one alone stands.
+	cheaper := report.RoleScore{Candidate: "e", Measured: true, Quality: 80, MeanCostNanoUSD: 1e7}
+	gt.V(t, report.Pareto([]report.RoleScore{scores[0], cheaper})).Nil()
+	// Two of the same quality and cost both stand.
+	same := report.RoleScore{Candidate: "f", Measured: true, Quality: 80, MeanCostNanoUSD: 5e7}
+	gt.A(t, report.Pareto([]report.RoleScore{scores[0], same})).Equal([]int{0, 1})
 }
