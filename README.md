@@ -184,12 +184,12 @@ and `claude-opus-5-5`.
   (`gcloud auth application-default login`). Enable `aiplatform.googleapis.com` in the project and
   grant the caller the IAM role `roles/aiplatform.user`.
 - **claude-vertex** additionally needs the Claude models enabled in Model Garden
-  (`claude-haiku-4-5`, `claude-sonnet-5-5` and `claude-opus-5-5` for `bench.toml`), and enough quota on the
+  (`claude-haiku-5-5`, `claude-sonnet-5-5` and `claude-opus-5-5` for `bench.toml`), and enough quota on the
   global endpoint for `concurrency` calls at once. The price table holds the global endpoint's
   prices; multi-region and regional endpoints cost 10% more, so they are refused.
 - Where a provider charges more for long prompts (above 200k input tokens for Gemini, 272k for
-  OpenAI), the price table holds the short-prompt price: a benchmark call's prompt is a few thousand
-  tokens.
+  OpenAI, 100k for `claude-haiku-5-5`), the price table holds the short-prompt price: a benchmark
+  call's prompt is a few thousand tokens.
 - **claude** calls the Anthropic API with `BENCHMARK_ANTHROPIC_API_KEY`; **openai** calls the
   OpenAI API with `BENCHMARK_OPENAI_API_KEY`. The openai candidates use the Responses API with
   reasoning effort `low`, since GPT-6 models accept function tools with a reasoning effort only

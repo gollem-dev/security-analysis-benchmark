@@ -23,9 +23,9 @@ provider = "gemini"
 model    = "gemini-3.1-pro-preview"
 
 [[candidates]]
-name     = "claude-haiku-4-5"
+name     = "claude-haiku-5-5"
 provider = "claude-vertex"
-model    = "claude-haiku-4-5"
+model    = "claude-haiku-5-5"
 
 [[candidates]]
 name     = "claude-sonnet-5-5"
