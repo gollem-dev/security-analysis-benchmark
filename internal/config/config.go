@@ -86,6 +86,29 @@ func (e Env) TargetFor(provider string) (GoogleCloudTarget, bool) {
 	return t, true
 }
 
+// minRedacted is the length of the shortest value Redact replaces: a Google Cloud project ID has at
+// least 6 characters, and a shorter value would also match unrelated text.
+const minRedacted = 6
+
+// Redact replaces every Google Cloud project and API key of e that occurs in text with the name of
+// its environment variable in angle brackets, so that an error a provider returned, which can quote
+// a project, does not disclose them where others can read it. Locations are kept: they name public
+// regions.
+func (e Env) Redact(text string) string {
+	values := []struct{ value, env string }{
+		{e.GoogleCloudProject, EnvGoogleCloudProject}, {e.GeminiProject, EnvGeminiProject},
+		{e.ClaudeVertexProject, EnvClaudeVertexProject}, {e.AnthropicAPIKey, EnvAnthropicAPIKey}, {e.OpenAIAPIKey, EnvOpenAIAPIKey},
+	}
+	// A value that contains another is replaced first, so the shorter one cannot split it.
+	slices.SortStableFunc(values, func(a, b struct{ value, env string }) int { return len(b.value) - len(a.value) })
+	for _, v := range values {
+		if len(v.value) >= minRedacted {
+			text = strings.ReplaceAll(text, v.value, "<"+v.env+">")
+		}
+	}
+	return text
+}
+
 // Candidate is one model the benchmark evaluates.
 type Candidate struct {
 	Name, Provider, Model string
@@ -124,7 +147,8 @@ type file struct {
 var candidateName = regexp.MustCompile(`^[A-Za-z0-9._@-]+$`)
 
 // Load reads the configuration at path, with env the values the CLI read from its flags and the
-// environment.
+// environment. Whether env can call the candidates is checked by CheckEnv, once the run has chosen
+// the candidates it calls: a candidate left out of the run needs no credentials.
 func Load(path string, env Env, prices pricing.Table) (*Loaded, error) {
 	var f file
 	md, err := toml.DecodeFile(path, &f)
@@ -178,8 +202,9 @@ func Load(path string, env Env, prices pricing.Table) (*Loaded, error) {
 				goerr.V("candidate", c.Name))
 		}
 		seen[c.Name] = true
-		if err := checkProvider(c.Name, c.Provider, env); err != nil {
-			return nil, err
+		if !slices.Contains(providers, c.Provider) {
+			return nil, goerr.New("a candidate names an unknown provider", goerr.V("candidate", c.Name), goerr.V("provider", c.Provider),
+				goerr.V("providers", providers))
 		}
 		if _, ok := prices.RateOf(c.Model); !ok {
 			return nil, goerr.New("a candidate's model has no price, so its cost cannot be forecast",
@@ -205,6 +230,18 @@ func Load(path string, env Env, prices pricing.Table) (*Loaded, error) {
 		out.Candidates = append(out.Candidates, Candidate{Name: c.Name, Provider: c.Provider, Model: c.Model, Roles: roles, Current: current})
 	}
 	return out, nil
+}
+
+var providers = []string{ProviderGemini, ProviderClaudeVertex, ProviderClaude, ProviderOpenAI}
+
+// CheckEnv refuses the configuration when Env cannot call one of its candidates.
+func (l *Loaded) CheckEnv() error {
+	for _, c := range l.Candidates {
+		if err := checkProvider(c.Name, c.Provider, l.Env); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // checkProvider refuses a candidate whose provider is unknown or cannot be called with env.
@@ -237,7 +274,7 @@ func checkProvider(name, provider string, env Env) error {
 		}
 	default:
 		return goerr.New("a candidate names an unknown provider", goerr.V("candidate", name), goerr.V("provider", provider),
-			goerr.V("providers", []string{ProviderGemini, ProviderClaudeVertex, ProviderClaude, ProviderOpenAI}))
+			goerr.V("providers", providers))
 	}
 	return nil
 }

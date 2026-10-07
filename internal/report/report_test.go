@@ -76,6 +76,16 @@ func TestThePageShowsEveryState(t *testing.T) {
 	}
 }
 
+// The candidates table names the run each candidate was measured in: its own, else the result's.
+func TestTheCandidatesTableNamesEachCandidatesRun(t *testing.T) {
+	r := everyState()
+	r.Candidates[1].RunID = "r2"
+	page := render(t, r)
+	gt.S(t, page).Contains("<th>Model</th><th>Measured in run</th>")
+	gt.B(t, regexp.MustCompile(`</span>a</td><td></td><td></td><td>20261003T000000Z-0123456</td>`).MatchString(page)).True()
+	gt.B(t, regexp.MustCompile(`</span>b</td><td></td><td></td><td>r2</td>`).MatchString(page)).True()
+}
+
 func TestAPageOfARunThatStoppedNothingSaysNothingOfIt(t *testing.T) {
 	r := resultOf([]string{"a"}, scenarioOf("api-named", 1, trials("a", []bool{true}, 1e7)...))
 	page := render(t, r)

@@ -86,27 +86,50 @@ func TestTargetFor(t *testing.T) {
 	gt.B(t, ok).False()
 }
 
+// loadAndCheck loads the configuration and checks that env can call its candidates.
+func loadAndCheck(t *testing.T, body string, env config.Env) error {
+	t.Helper()
+	l, err := config.Load(write(t, body), env, prices(t))
+	if err != nil {
+		return err
+	}
+	return l.CheckEnv()
+}
+
 func TestEachProvidersProjectAndLocationAreChecked(t *testing.T) {
 	onlyGemini := config.Env{GeminiProject: "g"}
-	_, err := config.Load(write(t, flash+sonnet), onlyGemini, prices(t))
+	err := loadAndCheck(t, flash+sonnet, onlyGemini)
 	gt.Error(t, err).Required()
 	gt.S(t, err.Error()).Contains(config.EnvClaudeVertexProject)
 	gt.S(t, err.Error()).Contains(config.EnvGoogleCloudProject)
-	_, err = config.Load(write(t, flash), onlyGemini, prices(t))
-	gt.NoError(t, err)
+	gt.NoError(t, loadAndCheck(t, flash, onlyGemini))
 
 	regional := config.Env{GoogleCloudProject: "p", GoogleCloudLocation: "us-central1"}
-	_, err = config.Load(write(t, flash+sonnet), regional, prices(t))
-	gt.Error(t, err)
+	gt.Error(t, loadAndCheck(t, flash+sonnet, regional))
 	regional.ClaudeVertexLocation = "global"
-	_, err = config.Load(write(t, flash+sonnet), regional, prices(t))
-	gt.NoError(t, err)
+	gt.NoError(t, loadAndCheck(t, flash+sonnet, regional))
 	for _, loc := range []string{"us", "us-east5"} {
-		_, err = config.Load(write(t, sonnet), config.Env{GoogleCloudProject: "p", GoogleCloudLocation: loc}, prices(t))
-		gt.Error(t, err)
+		gt.Error(t, loadAndCheck(t, sonnet, config.Env{GoogleCloudProject: "p", GoogleCloudLocation: loc}))
 	}
-	_, err = config.Load(write(t, flash), config.Env{GoogleCloudProject: "p", GoogleCloudLocation: "us-east5"}, prices(t))
-	gt.NoError(t, err)
+	gt.NoError(t, loadAndCheck(t, flash, config.Env{GoogleCloudProject: "p", GoogleCloudLocation: "us-east5"}))
+}
+
+// The configuration loads without credentials; only the candidates a run keeps are checked.
+func TestOnlyTheCheckedCandidatesNeedCredentials(t *testing.T) {
+	l, err := config.Load(write(t, flash+sonnet), config.Env{GeminiProject: "g"}, prices(t))
+	gt.NoError(t, err).Required()
+	gt.Error(t, l.CheckEnv())
+	l.Candidates = l.Candidates[:1]
+	gt.NoError(t, l.CheckEnv())
+}
+
+func TestRedactReplacesProjectsAndKeysButNotLocations(t *testing.T) {
+	env := config.Env{GoogleCloudProject: "my-project", ClaudeVertexProject: "my-project-claude", GoogleCloudLocation: "global",
+		AnthropicAPIKey: "sk-ant-secret", OpenAIAPIKey: "sk-openai-secret", GeminiProject: "short"}
+	text := "denied on projects/my-project-claude/locations/global and my-project; key sk-ant-secret, sk-openai-secret; short"
+	gt.S(t, env.Redact(text)).Equal("denied on projects/<" + config.EnvClaudeVertexProject +
+		">/locations/global and <" + config.EnvGoogleCloudProject + ">; key <" + config.EnvAnthropicAPIKey + ">, <" +
+		config.EnvOpenAIAPIKey + ">; short")
 }
 
 func TestAnInvalidConfigurationIsRefused(t *testing.T) {
@@ -134,18 +157,16 @@ func TestAnInvalidConfigurationIsRefused(t *testing.T) {
 		"current outside of its roles": flash + "roles = [\"worker\"]\ncurrent = [\"orchestrator\"]\n",
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := config.Load(write(t, body), env, prices(t))
-			gt.Error(t, err)
+			gt.Error(t, loadAndCheck(t, body, env))
 		})
 	}
-	_, err := config.Load(write(t, claude), config.Env{AnthropicAPIKey: "k"}, prices(t))
-	gt.NoError(t, err)
+	gt.NoError(t, loadAndCheck(t, claude, config.Env{AnthropicAPIKey: "k"}))
 }
 
 // A missing key's error names the variable, and never holds a key's value.
 func TestAMissingKeysErrorNamesTheVariable(t *testing.T) {
-	_, err := config.Load(write(t, "\n[[candidates]]\nname = \"c\"\nprovider = \"claude\"\nmodel = \"claude-opus-5-5\"\n"),
-		config.Env{OpenAIAPIKey: "secret-value"}, prices(t))
+	err := loadAndCheck(t, "\n[[candidates]]\nname = \"c\"\nprovider = \"claude\"\nmodel = \"claude-opus-5-5\"\n",
+		config.Env{OpenAIAPIKey: "secret-value"})
 	gt.Error(t, err).Required()
 	gt.S(t, err.Error()).Contains(config.EnvAnthropicAPIKey)
 	gt.S(t, err.Error()).NotContains("secret-value")
