@@ -41,7 +41,7 @@ func Render(w io.Writer, r *bench.Result) error {
 	return nil
 }
 
-// Chart is one role's chart of quality against cost efficiency, as an SVG document.
+// Chart is one role's chart of quality against mean cost, as an SVG document.
 type Chart struct {
 	Role string
 	SVG  []byte
@@ -81,32 +81,31 @@ type tick struct{ At, Label string }
 type chartView struct {
 	Label string
 	// Standalone makes the chart a document of its own, carrying the styles the page otherwise gives it.
-	Standalone                 bool
-	Width, Height              int
-	Left, Right, Top, Bottom   string
-	MidX, MidY, XTitleY        string
-	ZoneX, ZoneY, ZoneW, ZoneH string
-	XTicks, YTicks             []tick
-	Points                     []pointView
-	Frontier                   string
-	Compared                   string
-	Rows                       []roleRow
+	Standalone               bool
+	Width, Height            int
+	Left, Right, Top, Bottom string
+	MidX, MidY, XTitleY      string
+	XTicks, YTicks           []tick
+	Points                   []pointView
+	Frontier                 string
+	Compared                 string
+	Rows                     []roleRow
 }
 
 type pointView struct {
-	Name, Color, Title       string
-	X, Y, LabelX, LabelY     string
-	Leader                   bool
-	LeaderX, LeaderY         string
-	QLow, QHigh, ELow, EHigh string
+	Name, Color, Title               string
+	X, Y, LabelX, LabelY             string
+	Leader                           bool
+	LeaderX, LeaderY                 string
+	QLow, QHigh, CostLeft, CostRight string
 }
 
 type roleRow struct {
-	Name, Color                                                            string
-	Baseline                                                               bool
-	Quality, Efficiency, Grounded, PassK, ReachConduct, MeanCost, MeanTime string
-	Gap, Unmeasured                                                        string
-	Difficulties                                                           string
+	Name, Color                                                string
+	Baseline                                                   bool
+	Quality, MeanCost, Grounded, PassK, ReachConduct, MeanTime string
+	Gap, Unmeasured                                            string
+	Difficulties                                               string
 }
 
 type roleSection struct {
@@ -125,7 +124,7 @@ type scenarioView struct {
 }
 
 type scenarioRow struct {
-	Name, Color, Grounded, PassK, Quality, Efficiency, MeanCost, MeanTime, Calls, Actions, Lost, Endings, NotRun string
+	Name, Color, Grounded, PassK, Quality, MeanCost, MeanTime, Calls, Actions, Lost, Endings, NotRun string
 }
 
 func coord(v float64) string { return strconv.FormatFloat(v, 'f', 1, 64) }
@@ -217,10 +216,12 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 	cv := chartView{Label: string(view.Role), Width: chartWidth, Height: chartHeight,
 		Left: coord(plotLeft), Right: coord(plotRight), Top: coord(plotTop), Bottom: coord(plotBottom),
 		MidX: coord((plotLeft + plotRight) / 2), MidY: coord((plotTop + plotBottom) / 2), XTitleY: coord(plotBottom + 48),
-		ZoneX: coord(chartX(50)), ZoneY: coord(plotTop), ZoneW: coord(chartX(100) - chartX(50)), ZoneH: coord(chartY(50) - chartY(100)),
 		Compared: fmt.Sprintf("Scenarios compared: %d of the role's %d", view.Compared, view.Total)}
+	axis := newCostAxis(view.Scores)
+	for _, v := range axis.ticks() {
+		cv.XTicks = append(cv.XTicks, tick{At: coord(axis.x(v)), Label: tickLabel(v)})
+	}
 	for v := 0.0; v <= 100; v += 25 {
-		cv.XTicks = append(cv.XTicks, tick{At: coord(chartX(v)), Label: whole(v)})
 		cv.YTicks = append(cv.YTicks, tick{At: coord(chartY(v)), Label: whole(v)})
 	}
 	difficulties := map[int]bool{}
@@ -234,13 +235,14 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 		row := roleRow{Name: sc.Candidate, Color: color[sc.Candidate], Baseline: isBaseline(r, sc.Candidate, view.Role),
 			Unmeasured: strconv.Itoa(sc.Unmeasured)}
 		if !sc.Measured {
-			row.Quality, row.Efficiency, row.Grounded, row.PassK = "not measured", "not measured", "not measured", "not measured"
+			row.Quality, row.Grounded, row.PassK = "not measured", "not measured", "not measured"
 			row.ReachConduct, row.MeanCost, row.MeanTime = "-", "-", "-"
 			cv.Rows = append(cv.Rows, row)
 			continue
 		}
 		row.Quality = fmt.Sprintf("%s [%s, %s]", whole(sc.Quality), whole(sc.QualityCI.Low), whole(sc.QualityCI.High))
-		row.Efficiency = fmt.Sprintf("%s [%s, %s]", whole(sc.Efficiency), whole(sc.EfficiencyCI.Low), whole(sc.EfficiencyCI.High))
+		row.MeanCost = fmt.Sprintf("%s [%s, %s]", pricing.NanoUSD(sc.MeanCostNanoUSD).USD2Sig(),
+			pricing.NanoUSD(math.Round(sc.CostCI.Low)).USD2Sig(), pricing.NanoUSD(math.Round(sc.CostCI.High)).USD2Sig())
 		row.Grounded = fmt.Sprintf("%s [%s, %s] (%d / %d)", percent(sc.GroundedRate), percent(sc.GroundedCI.Low),
 			percent(sc.GroundedCI.High), sc.Grounded, sc.Trials)
 		row.PassK = "not measured"
@@ -248,7 +250,6 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 			row.PassK = percent(sc.PassK)
 		}
 		row.ReachConduct = fmt.Sprintf("%.2f / %.2f", sc.ReachMean, sc.ConductMean)
-		row.MeanCost = pricing.NanoUSD(sc.MeanCostNanoUSD).USD4()
 		row.MeanTime = fmt.Sprintf("%.1f s", sc.MeanSeconds)
 		switch {
 		case sc.Candidate == view.Best:
@@ -266,7 +267,8 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 				continue
 			}
 			if ds := sc.ByDifficulty[dd-1]; ds.Measured {
-				lines = append(lines, fmt.Sprintf("Difficulty %d: quality %s, cost efficiency %s", dd, whole(ds.Quality), whole(ds.Efficiency)))
+				lines = append(lines, fmt.Sprintf("Difficulty %d: quality %s, mean cost %s", dd, whole(ds.Quality),
+					pricing.NanoUSD(ds.MeanCostNanoUSD).USD2Sig()))
 			} else {
 				lines = append(lines, fmt.Sprintf("Difficulty %d: not measured", dd))
 			}
@@ -274,7 +276,7 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 		row.Difficulties = strings.Join(lines, " / ")
 		cv.Rows = append(cv.Rows, row)
 		measured = append(measured, sc)
-		points = append(points, Point{X: chartX(sc.Efficiency), Y: chartY(sc.Quality)})
+		points = append(points, Point{X: axis.x(float64(sc.MeanCostNanoUSD)), Y: chartY(sc.Quality)})
 		names = append(names, sc.Candidate)
 	}
 	labels := PlaceLabels(points, names)
@@ -285,13 +287,13 @@ func chart(r *bench.Result, view RoleView, color map[string]string) chartView {
 			X:     coord(points[k].X), Y: coord(points[k].Y), LabelX: coord(l.X), LabelY: coord(l.Y),
 			Leader: l.Leader, LeaderX: coord(l.LeaderX), LeaderY: coord(l.LeaderY),
 			QLow: coord(chartY(sc.QualityCI.Low)), QHigh: coord(chartY(sc.QualityCI.High)),
-			ELow: coord(chartX(sc.EfficiencyCI.Low)), EHigh: coord(chartX(sc.EfficiencyCI.High))})
+			CostLeft: coord(axis.x(sc.CostCI.High)), CostRight: coord(axis.x(sc.CostCI.Low))})
 	}
 	if frontier := Pareto(view.Scores); frontier != nil {
 		var xy []string
 		for _, i := range frontier {
 			sc := view.Scores[i]
-			xy = append(xy, coord(chartX(sc.Efficiency))+","+coord(chartY(sc.Quality)))
+			xy = append(xy, coord(axis.x(float64(sc.MeanCostNanoUSD)))+","+coord(chartY(sc.Quality)))
 		}
 		cv.Frontier = strings.Join(xy, " ")
 	}
@@ -319,15 +321,14 @@ func scenarioSection(r *bench.Result, s bench.ScenarioResult, color map[string]s
 		}
 		smp := collect(s, c.Name)
 		row := scenarioRow{Name: c.Name, Color: color[c.Name], Grounded: fmt.Sprintf("%d / %d", t.Grounded, t.Trials),
-			PassK: "-", Quality: "-", Efficiency: "-", MeanCost: "-", MeanTime: "-", Calls: "-", Actions: "-",
+			PassK: "-", Quality: "-", MeanCost: "-", MeanTime: "-", Calls: "-", Actions: "-",
 			Lost: shortfalls(s.Trials, c.Name), Endings: endings(s.Trials, c.Name), NotRun: strconv.Itoa(t.NotRun)}
 		if p, ok := PassHatK(t.Trials, t.Grounded, ReliabilityK); ok {
 			row.PassK = percent(p)
 		}
 		if cost, ok := t.MeanCost(); ok {
 			row.Quality = whole(average(smp.quality))
-			row.Efficiency = whole(Efficiency(cost, r.PlanOf(c.Name).TrialCapUSD))
-			row.MeanCost = pricing.NanoUSD(cost).USD4()
+			row.MeanCost = pricing.NanoUSD(cost).USD2Sig()
 			row.MeanTime = fmt.Sprintf("%.1f s", average(smp.seconds))
 			row.Calls = fmt.Sprintf("%.1f", t.MeanCalls())
 			row.Actions = actions(s.Trials, c.Name)

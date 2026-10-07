@@ -68,3 +68,18 @@ func TestFormatting(t *testing.T) {
 	gt.S(t, pricing.NanoUSD(0).USD4()).Equal("$0.0000")
 	gt.S(t, pricing.NanoUSD(-10_000_000).USD()).Equal("-$0.01")
 }
+
+func TestUSD2SigShowsTwoSignificantDigitsOfSmallAmounts(t *testing.T) {
+	for n, want := range map[pricing.NanoUSD]string{
+		83_100_000:    "$0.0831",
+		750_000:       "$0.00075",
+		72_000:        "$0.000072",
+		99_999:        "$0.000100",
+		2_000_000_000: "$2.0000",
+		0:             "$0.0000",
+		1:             "$0.000000001",
+		-750_000:      "-$0.00075",
+	} {
+		gt.S(t, n.USD2Sig()).Equal(want)
+	}
+}
