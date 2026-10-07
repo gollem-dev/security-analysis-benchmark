@@ -44,7 +44,7 @@ func TestTheEmbeddedCachePricesOfOpus55(t *testing.T) {
 func TestTheEmbeddedTablePricesTheBundledCandidates(t *testing.T) {
 	table, err := pricing.Embedded()
 	gt.NoError(t, err).Required()
-	for _, model := range []string{"gemini-3.8-flash", "claude-sonnet-5-5", "claude-opus-5-5"} {
+	for _, model := range []string{"gemini-3.8-flash", "claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"} {
 		r, ok := table.RateOf(model)
 		gt.B(t, ok).True()
 		gt.B(t, r.Input > 0 && r.Output > 0).True()

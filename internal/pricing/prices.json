@@ -7,6 +7,14 @@
     "source": "https://platform.claude.com/docs/en/about-claude/pricing",
     "checked": "2026-10-03"
   },
+  "claude-haiku-5-5": {
+    "input": 100,
+    "output": 500,
+    "cache_read": 10,
+    "cache_write": 125,
+    "source": "https://platform.claude.com/docs/en/about-claude/pricing",
+    "checked": "2026-10-08"
+  },
   "claude-opus-5": {
     "input": 5000,
     "output": 25000,
