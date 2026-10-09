@@ -129,10 +129,11 @@ type Loaded struct {
 type file struct {
 	MaxUSD *string `toml:"max_usd"`
 	Plan   *struct {
-		Trials          *int    `toml:"trials"`
-		TrialCapUSD     *string `toml:"trial_cap_usd"`
-		MaxOutputTokens *int    `toml:"max_output_tokens"`
-		Concurrency     *int    `toml:"concurrency"`
+		Trials          *int           `toml:"trials"`
+		RoleTrials      map[string]int `toml:"role_trials"`
+		TrialCapUSD     *string        `toml:"trial_cap_usd"`
+		MaxOutputTokens *int           `toml:"max_output_tokens"`
+		Concurrency     *int           `toml:"concurrency"`
 	} `toml:"plan"`
 	Candidates []struct {
 		Name     string   `toml:"name"`
@@ -180,6 +181,12 @@ func Load(path string, env Env, prices pricing.Table) (*Loaded, error) {
 		}{{p.Trials, &out.Plan.Trials}, {p.MaxOutputTokens, &out.Plan.MaxOutputTokens}, {p.Concurrency, &out.Plan.Concurrency}} {
 			if v.from != nil {
 				*v.to = *v.from
+			}
+		}
+		if len(p.RoleTrials) > 0 {
+			out.Plan.RoleTrials = map[bench.Role]int{}
+			for role, n := range p.RoleTrials {
+				out.Plan.RoleTrials[bench.Role(role)] = n
 			}
 		}
 		if p.TrialCapUSD != nil {

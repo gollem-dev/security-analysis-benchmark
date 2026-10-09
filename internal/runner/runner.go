@@ -114,7 +114,7 @@ func Run(ctx context.Context, cfg Config, scenarios []bench.Scenario) (*bench.Re
 			return nil, goerr.New("a candidate's model has no price", goerr.V("candidate", c.Name), goerr.V("model", c.Model))
 		}
 		mine := slices.DeleteFunc(slices.Clone(scenarios), func(s bench.Scenario) bool { return !evaluates(c, s) })
-		lines = append(lines, bench.Forecast(c.Name, rate, mine, loaded.Plan.Trials)...)
+		lines = append(lines, bench.Forecast(c.Name, rate, mine, loaded.Plan)...)
 	}
 
 	r := &run{cfg: cfg, plan: loaded.Plan, logger: cfg.Logger, trials: &liveTrials{m: map[string]*liveTrial{}},
@@ -152,14 +152,19 @@ func Run(ctx context.Context, cfg Config, scenarios []bench.Scenario) (*bench.Re
 	}()
 
 	// One trial of every scenario and candidate before the next, so a run that reaches max_usd leaves
-	// every scenario and candidate within one trial of the others.
+	// every scenario and candidate within one trial of the others, until a role has run all of its
+	// trials.
 	notRun := map[*prepared]map[string]int{}
 	var notRunMu sync.Mutex
-	for trial := 1; trial <= loaded.Plan.Trials; trial++ {
+	rounds := 0
+	for _, s := range scenarios {
+		rounds = max(rounds, loaded.Plan.TrialsOf(s.Kind.Role()))
+	}
+	for trial := 1; trial <= rounds; trial++ {
 		var g errgroup.Group
 		g.SetLimit(loaded.Plan.Concurrency)
 		for _, p := range all {
-			if p.result.Failure != "" {
+			if p.result.Failure != "" || trial > loaded.Plan.TrialsOf(p.scenario.Kind.Role()) {
 				continue
 			}
 			for _, c := range loaded.Candidates {

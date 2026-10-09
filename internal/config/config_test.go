@@ -55,6 +55,14 @@ func TestAPlanOverridesTheDefaults(t *testing.T) {
 	gt.A(t, l.Candidates[0].Current).Equal([]bench.Role{bench.RoleWorker})
 }
 
+func TestRoleTrialsOverrideTrialsForTheRolesTheyName(t *testing.T) {
+	l, err := config.Load(write(t, "[plan]\ntrials = 32\n\n[plan.role_trials]\nworker = 16\n"+flash),
+		config.Env{GoogleCloudProject: "p"}, prices(t))
+	gt.NoError(t, err).Required()
+	gt.N(t, l.Plan.TrialsOf(bench.RoleOrchestrator)).Equal(32)
+	gt.N(t, l.Plan.TrialsOf(bench.RoleWorker)).Equal(16)
+}
+
 func TestTargetFor(t *testing.T) {
 	type target = config.GoogleCloudTarget
 	cases := []struct {
@@ -137,24 +145,26 @@ func TestAnInvalidConfigurationIsRefused(t *testing.T) {
 	claude := "\n[[candidates]]\nname = \"c\"\nprovider = \"claude\"\nmodel = \"claude-opus-5-5\"\n"
 	openai := "\n[[candidates]]\nname = \"o\"\nprovider = \"openai\"\nmodel = \"gemini-2.5-flash\"\n"
 	for name, body := range map[string]string{
-		"an unknown key":               "colour = 1\n" + flash,
-		"a candidate's project":        flash + "project = \"p\"\n",
-		"a candidate's location":       flash + "location = \"global\"\n",
-		"a zero max_usd":               "max_usd = \"0\"\n" + flash,
-		"max_usd not in dollars":       "max_usd = \"$5\"\n" + flash,
-		"a cap not in dollars":         "[plan]\ntrial_cap_usd = \"lots\"\n" + flash,
-		"a zero plan value":            "[plan]\ntrials = 0\n" + flash,
-		"no candidate":                 "max_usd = \"1.00\"\n",
-		"a duplicate name":             flash + flash,
-		"an empty name":                "\n[[candidates]]\nname = \"\"\nprovider = \"gemini\"\nmodel = \"gemini-3.8-flash\"\n",
-		"a name with a slash":          "\n[[candidates]]\nname = \"a/b\"\nprovider = \"gemini\"\nmodel = \"gemini-3.8-flash\"\n",
-		"an unknown provider":          "\n[[candidates]]\nname = \"x\"\nprovider = \"bedrock\"\nmodel = \"gemini-3.8-flash\"\n",
-		"an unpriced model":            "\n[[candidates]]\nname = \"x\"\nprovider = \"gemini\"\nmodel = \"no-such-model\"\n",
-		"claude without a key":         claude,
-		"openai without a key":         openai,
-		"an unknown role":              flash + "roles = [\"planner\"]\n",
-		"an unknown current role":      flash + "current = [\"runner.sql\"]\n",
-		"current outside of its roles": flash + "roles = [\"worker\"]\ncurrent = [\"orchestrator\"]\n",
+		"an unknown key":                 "colour = 1\n" + flash,
+		"a candidate's project":          flash + "project = \"p\"\n",
+		"a candidate's location":         flash + "location = \"global\"\n",
+		"a zero max_usd":                 "max_usd = \"0\"\n" + flash,
+		"max_usd not in dollars":         "max_usd = \"$5\"\n" + flash,
+		"a cap not in dollars":           "[plan]\ntrial_cap_usd = \"lots\"\n" + flash,
+		"a zero plan value":              "[plan]\ntrials = 0\n" + flash,
+		"a zero role_trials value":       "[plan.role_trials]\nworker = 0\n" + flash,
+		"role_trials of an unknown role": "[plan.role_trials]\nplanner = 4\n" + flash,
+		"no candidate":                   "max_usd = \"1.00\"\n",
+		"a duplicate name":               flash + flash,
+		"an empty name":                  "\n[[candidates]]\nname = \"\"\nprovider = \"gemini\"\nmodel = \"gemini-3.8-flash\"\n",
+		"a name with a slash":            "\n[[candidates]]\nname = \"a/b\"\nprovider = \"gemini\"\nmodel = \"gemini-3.8-flash\"\n",
+		"an unknown provider":            "\n[[candidates]]\nname = \"x\"\nprovider = \"bedrock\"\nmodel = \"gemini-3.8-flash\"\n",
+		"an unpriced model":              "\n[[candidates]]\nname = \"x\"\nprovider = \"gemini\"\nmodel = \"no-such-model\"\n",
+		"claude without a key":           claude,
+		"openai without a key":           openai,
+		"an unknown role":                flash + "roles = [\"planner\"]\n",
+		"an unknown current role":        flash + "current = [\"runner.sql\"]\n",
+		"current outside of its roles":   flash + "roles = [\"worker\"]\ncurrent = [\"orchestrator\"]\n",
 	} {
 		t.Run(name, func(t *testing.T) {
 			gt.Error(t, loadAndCheck(t, body, env))

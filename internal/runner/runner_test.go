@@ -428,6 +428,26 @@ func TestARunOverItsForecastRunsWithinMaxUSD(t *testing.T) {
 	gt.B(t, res.SpentNanoUSD <= int64(max)).True()
 }
 
+func TestEachRoleRunsItsOwnNumberOfTrials(t *testing.T) {
+	flash := &scriptedClient{model: "gemini-3.8-flash", reply: followAPI(100)}
+	p := plan(2)
+	p.RoleTrials = map[bench.Role]int{bench.RoleOrchestrator: 3}
+	res, err := runner.Run(context.Background(), cfg(t, loaded(t, "20.00", p, "flash"),
+		map[string]*scriptedClient{"flash": flash}), scenarios(t, "investigate-vague-report", "api-named"))
+	gt.NoError(t, err).Required()
+	want := map[string]int{"investigate-vague-report": 3, "api-named": 2}
+	for _, rr := range res.Roles {
+		for _, s := range rr.Scenarios {
+			gt.A(t, s.Trials).Length(want[s.ID])
+			tally, _ := s.Tally("flash")
+			gt.N(t, tally.NotRun).Equal(0)
+		}
+	}
+	for _, l := range res.Forecast {
+		gt.N(t, l.Trials).Equal(want[l.Scenario])
+	}
+}
+
 // followAPI(8000) costs $0.03 a call on gemini-3.8-flash and its worst case is reserved at about
 // $0.035, so $0.10 holds one trial's three calls and no more.
 func TestTheRunNeverCrossesMaxUSD(t *testing.T) {
