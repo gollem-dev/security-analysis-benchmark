@@ -117,7 +117,7 @@ because a README's image cannot follow a redirect or a symbolic link. Commit `re
 `results/runs/` included; GitHub Pages serves the repository's `main` branch.
 
 A result in `results/runs/` holds every call and tool result of every trial, which a full run of
-`bench.toml` makes about 15 MB. Before it is written, the Google Cloud projects and API keys the run
+`bench.toml` makes about 42 MB. Before it is written, the Google Cloud projects and API keys the run
 was given are replaced in its error messages with the names of their environment variables, in case
 a provider's error quotes one. The traces are not saved there; they stay under `.eval/`.
 
