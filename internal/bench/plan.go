@@ -8,8 +8,12 @@ import (
 
 // Plan is how a run spends its trials.
 type Plan struct {
-	// Trials is how many times every candidate runs every scenario of its roles.
+	// Trials is how many times every candidate runs every scenario of its roles, unless RoleTrials
+	// names the role.
 	Trials int `json:"trials"`
+	// RoleTrials is how many times every candidate runs every scenario of the roles it names, in
+	// place of Trials.
+	RoleTrials map[Role]int `json:"role_trials,omitempty"`
 	// TrialCapUSD is the most one trial may spend.
 	TrialCapUSD pricing.NanoUSD `json:"trial_cap_nano_usd"`
 	// MaxOutputTokens is the most one LLM call may write, thinking included. It bounds a call's
@@ -36,7 +40,24 @@ func (p Plan) Validate() error {
 				goerr.V("key", v.key), goerr.V("value", v.value))
 		}
 	}
+	for role, n := range p.RoleTrials {
+		if !role.Valid() {
+			return goerr.New("role_trials names an unknown role", goerr.V("role", role), goerr.V("roles", Roles))
+		}
+		if n < 1 {
+			return goerr.New("every [plan] value must be more than zero",
+				goerr.V("key", "role_trials."+string(role)), goerr.V("value", n))
+		}
+	}
 	return nil
+}
+
+// TrialsOf is how many times every candidate runs every scenario of role.
+func (p Plan) TrialsOf(role Role) int {
+	if n, ok := p.RoleTrials[role]; ok {
+		return n
+	}
+	return p.Trials
 }
 
 // The forecast's assumption about one expected LLM call: rounded up from the mean call of the
@@ -57,11 +78,12 @@ type ForecastLine struct {
 	NanoUSD   pricing.NanoUSD `json:"nano_usd"`
 }
 
-// Forecast is what trials runs of every scenario would cost at rate.
-func Forecast(candidate string, rate pricing.Rate, scenarios []Scenario, trials int) []ForecastLine {
+// Forecast is what the plan's trials of every scenario would cost at rate.
+func Forecast(candidate string, rate pricing.Rate, scenarios []Scenario, plan Plan) []ForecastLine {
 	per := rate.Cost(ForecastInputTokens, ForecastOutputTokens, 0, 0)
 	out := make([]ForecastLine, 0, len(scenarios))
 	for _, s := range scenarios {
+		trials := plan.TrialsOf(s.Kind.Role())
 		out = append(out, ForecastLine{Candidate: candidate, Role: s.Kind.Role(), Scenario: s.ID, Trials: trials,
 			Calls: s.ExpectedCalls, NanoUSD: pricing.NanoUSD(trials*s.ExpectedCalls) * per})
 	}
