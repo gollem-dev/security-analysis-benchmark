@@ -87,6 +87,14 @@
     "source": "https://ai.google.dev/gemini-api/docs/pricing",
     "checked": "2026-10-03"
   },
+  "gemini-4-argon": {
+    "input": 2000,
+    "output": 10000,
+    "cache_read": 100,
+    "cache_write": 0,
+    "source": "https://ai.google.dev/gemini-api/docs/pricing",
+    "checked": "2026-10-14"
+  },
   "gpt-6-luna": {
     "input": 100,
     "output": 500,

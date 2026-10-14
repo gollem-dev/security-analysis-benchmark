@@ -223,6 +223,8 @@ and `claude-opus-5-5`.
 - Where a provider charges more for long prompts (above 200k input tokens for Gemini, 272k for
   OpenAI, 100k for `claude-haiku-5-5`), the price table holds the short-prompt price: a benchmark
   call's prompt is a few thousand tokens.
+- The price table holds the prices `gemini-4-argon` has through 2026-11-30. Google doubles them on
+  2026-12-01, so its costs measured before then will be half of what the same calls cost afterwards.
 - **claude** calls the Anthropic API with `BENCHMARK_ANTHROPIC_API_KEY`; **openai** calls the
   OpenAI API with `BENCHMARK_OPENAI_API_KEY`. The openai candidates use the Responses API with
   reasoning effort `low`, since GPT-6 models accept function tools with a reasoning effort only
